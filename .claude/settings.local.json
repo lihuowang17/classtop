@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:pytauri.github.io)",
+      "WebFetch(domain:www.mdui.org)",
+      "WebSearch"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

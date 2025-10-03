@@ -32,3 +32,9 @@ pyo3 = { version = "0.25" }
 pytauri = { version = "0.8" }
 tauri-plugin-pytauri = { version = "0.8" }
 tauri-plugin-clipboard-manager = "2"
+
+[profile.bundle-dev]
+inherits = "dev"
+
+[profile.bundle-release]
+inherits = "release"

@@ -1,4 +1,7 @@
 """The main entry point for the Tauri app."""
+from . import logger as _logger
+
+_logger.init_logger()
 
 import sys
 from multiprocessing import freeze_support

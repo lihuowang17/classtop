@@ -29,6 +29,9 @@ __pycache__/
 dist/
 build/
 
+# embedded Python
+**/pyembed/python
+
 # Tauri
 src-tauri/target/
 src-tauri/target/release/

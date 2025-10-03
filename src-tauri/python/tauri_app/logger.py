@@ -14,14 +14,27 @@ LOG_FILE = LOG_DIR / "app.log"
 # Configure loguru
 logger.remove()
 
-# Terminal sink: enable colors and show file/function/line
-TERMINAL_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
-logger.add(sys.stderr, level="INFO", colorize=True, format=TERMINAL_FORMAT)
+TEST_1 = LOG_DIR / "TEST_1"
+TEST_1.mkdir(parents=True, exist_ok=True)
+
+# Terminal sink: enable colors and show file/function/line (only if stderr is available)
+if sys.stderr is not None:
+    try:
+        TERMINAL_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+        logger.add(sys.stderr, level="INFO", colorize=True, format=TERMINAL_FORMAT)
+    except Exception:
+        # In production mode without console, stderr might not be writable
+        pass
+
+TEST_2 = LOG_DIR / "TEST_2"
+TEST_2.mkdir(parents=True, exist_ok=True)
 
 # File sink: plain text with full context
 FILE_FORMAT = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}"
 logger.add(str(LOG_FILE), rotation="10 MB", retention="10 days", encoding="utf-8", level="DEBUG", format=FILE_FORMAT)
 
+TEST_3 = LOG_DIR / "TEST_3"
+TEST_3.mkdir(parents=True, exist_ok=True)
 
 def init_logger():
     logger.info("Logger initialized")

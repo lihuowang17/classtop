@@ -9,7 +9,8 @@ dependencies = [
     "anyio == 4.*",
     "pyyaml",
     "loguru",
-    "pillow"
+    "pillow",
+    "aiohttp-cors"
 ]  
 
 [project.entry-points.pytauri]

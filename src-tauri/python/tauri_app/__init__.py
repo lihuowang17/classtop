@@ -1,19 +1,6 @@
 # --8<-- [start:command]
 
-from anyio.from_thread import start_blocking_portal
-from pytauri import (
-    builder_factory,
-    context_factory,
-    AppHandle,
-)
-
 from . import logger as _logger
-from . import db as _db
-from .tray import SystemTray
-from .commands import commands
-from .events import event_handler
-from .schedule_manager import ScheduleManager
-from .settings_manager import SettingsManager
 
 # --8<-- [end:command]
 
@@ -25,6 +12,20 @@ def main() -> int:
     except Exception:
         # don't fail startup if logging can't initialize
         pass
+    
+    from anyio.from_thread import start_blocking_portal
+
+    from pytauri import (
+        builder_factory,
+        context_factory
+    )
+    
+    from .tray import SystemTray
+    from .commands import commands
+    from .events import event_handler
+    from .schedule_manager import ScheduleManager
+    from .settings_manager import SettingsManager
+    from . import db as _db
 
     context = context_factory()
     with start_blocking_portal("asyncio") as portal:  # or `trio`
@@ -47,15 +48,18 @@ def main() -> int:
             settings_manager = SettingsManager(_db.DB_PATH, event_handler)
             _db.set_settings_manager(settings_manager)
             settings_manager.initialize_defaults()
-            _logger.log_message("info", "Settings manager initialized with defaults")
+            _logger.log_message(
+                "info", "Settings manager initialized with defaults")
 
             # Initialize schedule manager with event handler
             schedule_manager = ScheduleManager(_db.DB_PATH, event_handler)
             _db.set_schedule_manager(schedule_manager)
 
-            _logger.log_message("info", "All managers initialized successfully")
+            _logger.log_message(
+                "info", "All managers initialized successfully")
         except Exception as e:
-            _logger.log_message("error", f"Failed to initialize database or managers: {e}")
+            _logger.log_message(
+                "error", f"Failed to initialize database or managers: {e}")
             pass
 
         # Setup system tray

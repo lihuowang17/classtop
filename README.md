@@ -119,14 +119,12 @@ npm run tauri dev
 ### 构建生产版本
 
 ```bash
-# 构建前端
-npm run build
 
 # 构建应用程序
-npm run tauri build
+npm run -- tauri build --config="src-tauri/tauri.bundle.json" -- --profile bundle-release
 ```
 
-构建产物位于 `src-tauri/target/release/`
+构建产物位于 `src-tauri/target/bundle-release/`
 
 ## 📖 核心功能说明
 
@@ -166,7 +164,7 @@ npm run tauri build
 
 支持两种模式：
 
-1. **手动设置**: 在设置页手动指定当前周数
+1. **手动设置**: 在设置页手动指定当前周数 ( **已废弃** )
 2. **自动计算**: 设置学期开始日期，自动计算当前周数
 
 **文件**: `src-tauri/python/tauri_app/schedule_manager.py`

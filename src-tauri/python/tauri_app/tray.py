@@ -5,10 +5,11 @@ System tray functionality for ClassTop application.
 import os
 from typing import Optional
 
-from pytauri.tray import TrayIcon, TrayIconEvent, MouseButton
+from pytauri.tray import TrayIcon, TrayIconEvent, MouseButton, MouseButtonState
 from pytauri.menu import Menu, MenuItem, PredefinedMenuItem
 from pytauri.image import Image
-from pytauri import AppHandle, Manager
+from pytauri import AppHandle, Manager, WebviewUrl
+from pytauri.webview import WebviewWindowBuilder
 from . import logger
 
 
@@ -25,9 +26,40 @@ class SystemTray:
         try:
             # Get the window by name
             window = Manager.get_webview_window(self.app_handle, window_name)
+
             if not window:
-                logger.log_message("error", f"Window '{window_name}' not found")
-                return False
+                logger.log_message("warning", f"Window '{window_name}' not found.")
+
+                # Create window based on configuration
+                if window_name == "main":
+                    logger.log_message("info", f"Creating window '{window_name}'")
+                    # Create main window with configuration from tauri.conf.json
+                    window = WebviewWindowBuilder.build(
+                        self.app_handle,
+                        window_name,
+                        WebviewUrl.App("/"),  # Use WebviewUrl.App for internal routes
+                        title="ClassTop",
+                        inner_size=(1200.0, 800.0),
+                        min_inner_size=(800.0, 600.0),
+                        position=(300.0, 100.0),
+                        resizable=True,
+                        maximizable=True,
+                        minimizable=True,
+                        closable=True,
+                        decorations=True,
+                        always_on_top=False,
+                        skip_taskbar=False,
+                        transparent=False,
+                        shadow=True,
+                        center=True,
+                        focused=True,
+                        visible=True
+                    )
+                    logger.log_message("info", f"Created window '{window_name}'")
+                    return True
+                else:
+                    logger.log_message("error", f"Unknown window '{window_name}'")
+                    return False
 
             # Check if window is visible and toggle
             is_visible = window.is_visible()
@@ -51,7 +83,8 @@ class SystemTray:
         """Handle system tray icon events"""
         if isinstance(event, TrayIconEvent.Click):
             # Left click - toggle main window
-            if event.button == MouseButton.Left:
+            # Only respond to button release to avoid double-triggering
+            if event.button == MouseButton.Left and event.button_state == MouseButtonState.Up:
                 self.toggle_window("main")
 
     def handle_menu_event(self, app, event):

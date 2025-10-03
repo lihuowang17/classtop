@@ -1,8 +1,8 @@
 <template>
-    <main class="top-bar-container">
+    <main class="top-bar-container" id="top-bar-container" v-show="topbarType === 'full'">
         <div class="top-bar-content">
             <div class="left-section" v-if="settings.show_schedule">
-                <Schedule :key="scheduleKey" />
+                <Schedule :key="scheduleKey" type="full" @classStart="handleClassStart" @classEnd="handleClassEnd" />
             </div>
 
             <div class="center-section" v-if="settings.show_clock">
@@ -10,6 +10,7 @@
             </div>
 
             <div class="right-section">
+                <span v-show="mouseOn">MouseOn</span>
                 <div class="control-buttons">
                     <mdui-button-icon id="pin-button" selectable icon="push_pin--outlined" selected-icon="push_pin"
                         @click="handlePin"></mdui-button-icon>
@@ -18,6 +19,7 @@
             </div>
         </div>
     </main>
+    <Schedule :key="scheduleKey" type="mini" v-if="topbarType === 'thin' && settings.show_schedule" />
 </template>
 
 <script setup>
@@ -25,24 +27,30 @@ import { ref, onMounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import Clock from './components/Clock.vue';
-import Schedule from './components/Schedule.vue';
+import Schedule, { progress as classProgress } from './components/Schedule.vue';
 import { loadSettings, settings } from '../utils/globalVars';
+import { mouseOn, init as initMouse } from '../utils/mouse';
 
-// 响应式数据
-const isPinned = ref(false);
 // 用于强制重载 Schedule 组件的 key
 const scheduleKey = ref(Date.now());
 
 // 初始化顶栏窗口
 onMounted(async () => {
+    document.body.classList.add("topbar")
     try {
         await invoke('setup_topbar_window');
         document.body.style.borderRadius = "0 0 15px 15px";
+
+        setTimeout(() => {
+            fullWidth = window.innerWidth
+        }, 50);
     } catch (error) {
         console.error('Failed to setup top bar window:', error);
     }
 
     isPinned.value = false;
+
+    initMouse()
 
     // 监听设置更新事件
     try {
@@ -102,14 +110,53 @@ const forceReloadSchedule = () => {
     scheduleKey.value = Date.now();
 };
 
+const handleClassStart = () => {
+    if (!isPinned.value) {
+        setThinTopbar()
+    }
+};
+
+const handleClassEnd = () => {
+        setFullTopbar()
+};
+
 defineExpose({
     toggleVisibility: handleClose,
-    isPinned,
     forceReloadSchedule
 });
 </script>
 
-<style scoped>
+<script>
+// 响应式数据
+export const isPinned = ref(false);
+export const topbarType = ref(["full", "thin"][0]) // 'full' or 'thin'
+var fullWidth = 1024
+var thinWidth = '10rem'
+
+export const setFullTopbar = async () => {
+    await invoke('resize_topbar_window', { width: fullWidth, height: 50 })
+    document.body.style.width = `${fullWidth}px`
+    document.body.style.height = `50px`
+    document.body.style.borderRadius = "0 0 15px 15px";
+    document.getElementById("app").style.backgroundColor = ""
+    topbarType.value = 'full'
+}
+
+export const setThinTopbar = async () => {
+    document.body.style.width = thinWidth
+    document.body.style.height = `1.3rem`
+    document.body.style.borderRadius = "0";
+    topbarType.value = 'thin'
+    document.getElementById("app").style.backgroundColor = "rgba(255, 255, 255, 0)"
+    setTimeout(async () => {
+        if(!mouseOn.value) await invoke('resize_topbar_window', { width: document.body.clientWidth, height: document.body.clientHeight })
+    }, 700);
+
+}
+
+</script>
+
+<style lang="less" scoped>
 .top-bar-container {
     width: 100%;
     height: 100vh;
@@ -117,7 +164,6 @@ defineExpose({
     border-radius: 0 0 15px 15px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    -webkit-app-region: drag;
 }
 
 .top-bar-content {

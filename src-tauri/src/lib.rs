@@ -39,6 +39,36 @@ async fn setup_topbar_window(app_handle: tauri::AppHandle) -> Result<(), String>
 }
 
 #[tauri::command]
+async fn resize_topbar_window(
+    app_handle: tauri::AppHandle,
+    width: u32,
+    height: u32,
+) -> Result<(), String> {
+    let window = app_handle
+        .get_webview_window("topbar")
+        .ok_or("Window not found")?;
+
+    if let Ok(monitors) = window.available_monitors() {
+        if let Some(monitor) = monitors.first() {
+            let screen_size = monitor.size();
+            let screen_width = screen_size.width;
+
+            // Calculate x position to center the window horizontally
+            let window_x = ((screen_width - width) / 2) as i32;
+
+            window
+                .set_size(PhysicalSize::new(width, height))
+                .map_err(|e| e.to_string())?;
+            window
+                .set_position(PhysicalPosition::new(window_x, 0))
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn toggle_window(app_handle: tauri::AppHandle, window_name: String) -> Result<bool, String> {
     // Use the provided window name (e.g., "main", "topbar") instead of hard-coded "main"
     let window = app_handle
@@ -77,6 +107,7 @@ pub mod ext_mod {
                     .invoke_handler(tauri::generate_handler![
                         greet,
                         setup_topbar_window,
+                        resize_topbar_window,
                         toggle_window
                     ]);
                 Ok(builder)

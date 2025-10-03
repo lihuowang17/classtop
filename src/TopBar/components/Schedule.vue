@@ -1,9 +1,10 @@
 <template>
-  <div class="schedule-container">
+  <div class="schedule-container" v-if="props.type === 'full'">
     <mdui-linear-progress class="currentClass" id="progress" :class="{ 'break-time': isBreakTime }" :value="progress"
-      :data-text="displayText">
-    </mdui-linear-progress>
+      :data-text="displayText"></mdui-linear-progress>
   </div>
+  <mdui-linear-progress id="mini-progress" :value="progress"
+    v-if="props.type === 'mini'"></mdui-linear-progress>
 </template>
 
 <script setup>
@@ -20,6 +21,15 @@ import {
 } from '../../utils/schedule.js';
 import { listen } from '@tauri-apps/api/event';
 
+const props = defineProps({
+  type: {
+    type: String,
+    default: 'full' // 'full' or 'mini'
+  }
+});
+
+const emit = defineEmits(['classStart', 'classEnd']);
+
 // 课程数据缓存
 const todaySchedule = ref([]);
 const weekSchedule = ref([]);
@@ -27,9 +37,11 @@ const currentWeek = ref(1);
 
 // 显示状态
 const displayText = ref('暂无课程');
-const progress = ref(0);
 const currentTime = ref(new Date());
 const isBreakTime = ref(false);
+
+// 上一次的课程状态（用于检测课程变化）
+const lastClassState = ref(null);
 
 let intervalId = null;
 let updateIntervalId = null;
@@ -61,7 +73,7 @@ const calculateProgress = () => {
   const currentSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
   // 查找当前课程和下一节课
-  const current = findCurrentClass(todaySchedule.value, now);
+  current = findCurrentClass(todaySchedule.value, now);
   const next = findNextClass(todaySchedule.value, now);
   const last = findLastClass(todaySchedule.value, now);
 
@@ -97,12 +109,33 @@ const updateDisplay = () => {
   const currentSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
   // 从缓存数据中查找当前状态
-  const current = findCurrentClass(todaySchedule.value, now);
+  current = findCurrentClass(todaySchedule.value, now);
   const todayNext = findNextClass(todaySchedule.value, now);
 
   // 跨天查找下一节课
   const todayWeekday = getTodayWeekday();
   const nextAcrossWeek = findNextClassAcrossWeek(weekSchedule.value, todayWeekday, now);
+
+  // 检测课程状态变化并触发钩子
+  const currentClassId = current ? `${current.name}-${current.start_time}` : null;
+
+  if (lastClassState.value !== currentClassId) {
+    if (currentClassId && !lastClassState.value) {
+      // 从无课 -> 有课：上课了
+      emit('classStart', current);
+    } else if (!currentClassId && lastClassState.value) {
+      // 从有课 -> 无课：下课了
+      const lastClass = todaySchedule.value.find(c => `${c.name}-${c.start_time}` === lastClassState.value);
+      emit('classEnd', lastClass || { name: '上一节课' });
+    } else if (currentClassId && lastClassState.value && currentClassId !== lastClassState.value) {
+      // 从一节课 -> 另一节课：下课 + 上课
+      const lastClass = todaySchedule.value.find(c => `${c.name}-${c.start_time}` === lastClassState.value);
+      emit('classEnd', lastClass || { name: '上一节课' });
+      emit('classStart', current);
+    }
+
+    lastClassState.value = currentClassId;
+  }
 
   if (current) {
     // 当前有课
@@ -152,6 +185,7 @@ const updateDisplay = () => {
     const dayName = dayNames[nextAcrossWeek.day_of_week] || '未知';
     displayText.value = `今日课程结束 - 下一节: ${dayName} ${nextAcrossWeek.name}`;
     rewidthProgressBar();
+    current = null;
     progress.value = 0;
   } else {
     // 没有任何课程
@@ -260,6 +294,11 @@ onUnmounted(() => {
 });
 </script>
 
+<script>
+export const progress = ref(0);
+export let current = null;
+</script>
+
 <style scoped>
 .schedule-container {
   position: relative;
@@ -287,6 +326,13 @@ onUnmounted(() => {
   white-space: nowrap;
   pointer-events: none;
   z-index: 1;
+}
+
+#mini-progress {
+  width: 100%;
+  height: calc(100% - 4px);
+  border-radius: 8px;
+  margin-top: 4px;
 }
 
 @media (max-width: 800px) {

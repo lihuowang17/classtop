@@ -1,5 +1,6 @@
 import { onMounted, ref } from "vue";
 import { isPinned, setFullTopbar, setThinTopbar } from "../TopBar/TopBar.vue";
+import { current } from "../TopBar/components/Schedule.vue";
 
 
 const mouseOn = ref(false)
@@ -17,7 +18,7 @@ const handleMouseEnter = async () => {
 const handleMouseLeave = async () => {
     mouseOn.value = false
 
-    if (!isPinned.value) {
+    if (!isPinned.value && current) {
         try {
             await setThinTopbar()
         } catch (error) {

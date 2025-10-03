@@ -273,6 +273,12 @@ async def get_current_week() -> Dict:
 
 
 @commands.command()
+async def get_calculated_week_number() -> int:
+    """Get current week number (calculated from semester start date or fallback to manual)."""
+    return _db.get_calculated_week_number()
+
+
+@commands.command()
 async def set_semester_start_date(body: Dict) -> Dict:
     """Set the semester start date for automatic week calculation."""
     start_date = body.get("date", "")
@@ -284,3 +290,55 @@ async def set_semester_start_date(body: Dict) -> Dict:
         return {"success": True, "semester_start_date": start_date, "calculated_week": week}
     else:
         return {"success": True, "semester_start_date": "", "calculated_week": 1}
+
+
+# ========== Settings Management Commands ==========
+
+@commands.command()
+async def get_all_settings() -> Dict[str, str]:
+    """Get all application settings."""
+    return _db.list_configs()
+
+
+@commands.command()
+async def update_settings(body: Dict) -> Dict:
+    """Update multiple settings at once."""
+    settings = body.get("settings", {})
+
+    if not settings:
+        return {"success": False, "message": "No settings provided"}
+
+    # Update through settings manager if available
+    if _db.settings_manager:
+        success = _db.settings_manager.update_multiple(settings)
+        return {"success": success}
+    else:
+        # Fallback to individual updates
+        for key, value in settings.items():
+            _db.set_config(key, str(value))
+        return {"success": True}
+
+
+@commands.command()
+async def regenerate_uuid() -> Dict:
+    """Regenerate client UUID."""
+    if _db.settings_manager:
+        new_uuid = _db.settings_manager.regenerate_uuid()
+        return {"success": True, "uuid": new_uuid}
+    else:
+        import uuid
+        new_uuid = str(uuid.uuid4())
+        _db.set_config('client_uuid', new_uuid)
+        return {"success": True, "uuid": new_uuid}
+
+
+@commands.command()
+async def reset_settings(body: Dict) -> Dict:
+    """Reset settings to default values."""
+    exclude_keys = body.get("exclude", [])
+
+    if _db.settings_manager:
+        success = _db.settings_manager.reset_to_defaults(exclude_keys)
+        return {"success": success}
+    else:
+        return {"success": False, "message": "Settings manager not available"}

@@ -1,11 +1,11 @@
 <template>
     <main class="top-bar-container">
         <div class="top-bar-content">
-            <div class="left-section">
+            <div class="left-section" v-if="settings.show_schedule">
                 <Schedule :key="scheduleKey" />
             </div>
 
-            <div class="center-section">
+            <div class="center-section" v-if="settings.show_clock">
                 <Clock />
             </div>
 
@@ -23,8 +23,10 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import Clock from './components/Clock.vue';
 import Schedule from './components/Schedule.vue';
+import { loadSettings, settings } from '../utils/globalVars';
 
 // 响应式数据
 const isPinned = ref(false);
@@ -41,6 +43,40 @@ onMounted(async () => {
     }
 
     isPinned.value = false;
+
+    // 监听设置更新事件
+    try {
+        await listen('setting-update', (event) => {
+            console.log('Setting update received in TopBar:', event.payload);
+            let value = event.payload.value;
+            // 对于字符串'boolean'类型的设置，需要转换为布尔值
+            if (value === 'true' || value === 'false') {
+                value = value === 'true';
+            }
+            // 更新对应的设置
+            settings[event.payload.key] = value;
+        });
+
+        // 监听批量设置更新事件 - 刷新 Schedule 组件
+        await listen('settings-batch-update', (event) => {
+            console.log('Batch settings update received in TopBar:', event.payload);
+
+            // 检查是否更新了影响课表显示的设置
+            const affectsSchedule = event.payload.updated_keys.some(key =>
+                ['show_schedule', 'semester_start_date'].includes(key)
+            );
+
+            if (affectsSchedule) {
+                console.log('Settings affecting schedule updated, reloading...');
+                forceReloadSchedule();
+            }
+
+            // 重新加载所有设置以确保同步
+            loadSettings();
+        });
+    } catch (error) {
+        console.error('Failed to setup setting update listener:', error);
+    }
 });
 
 const handlePin = function (e) {

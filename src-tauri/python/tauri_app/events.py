@@ -18,6 +18,18 @@ class ScheduleUpdateEvent(BaseModel):
     payload: Dict[str, Any]
     timestamp: str
 
+class SettingUpdateEvent(BaseModel):
+    """Model for setting updated events."""
+    key: str
+    value: Any
+    timestamp: str
+
+
+class SettingsBatchUpdateEvent(BaseModel):
+    """Model for batch settings update events."""
+    updated_keys: list[str]
+    timestamp: str
+
 
 class EventHandler:
     """Thread-safe event handler for emitting events to the frontend."""
@@ -36,6 +48,35 @@ class EventHandler:
         self._app_handle = app_handle
         self._portal = portal
         logger.log_message("info", "Event handler initialized with async portal")
+        
+    def emit_string_event(self, event_name: str, message: str) -> None:
+        """Emit a simple string event to the frontend."""
+        if not self._app_handle:
+            logger.log_message("warning", "Event handler not initialized, cannot emit event")
+            return
+
+        try:
+            Emitter.emit_str(self._app_handle, event_name, message)
+            logger.log_message("debug", f"String event emitted: {event_name} - {message}")
+        except Exception as e:
+            logger.log_message("error", f"Failed to emit string event: {e}")
+    
+    def emit_setting_update(self, key: str, value: Any) -> None:
+        """Emit an event when a setting is updated."""
+        if not self._app_handle:
+            logger.log_message("warning", "Event handler not initialized, cannot emit event")
+            return
+
+        try:
+            event_data = SettingUpdateEvent(
+                key=key,
+                value=value,
+                timestamp=datetime.now().isoformat()
+            )
+            Emitter.emit(self._app_handle, "setting-update", event_data)
+            logger.log_message("info", f"Setting update event emitted: {key} = {value}")
+        except Exception as e:
+            logger.log_message("error", f"Failed to emit setting update event: {e}")
 
     def emit_schedule_update(self, event_type: str, payload: Dict[str, Any]) -> None:
         """Emit a schedule update event to the frontend."""
@@ -121,6 +162,22 @@ class EventHandler:
     def emit_schedule_deleted(self, entry_id: int) -> None:
         """Emit event when a schedule entry is deleted."""
         self.emit_schedule_update("schedule_deleted", {"id": entry_id})
+
+    def emit_settings_batch_updated(self, updated_keys: list) -> None:
+        """Emit event when multiple settings are updated at once."""
+        if not self._app_handle:
+            logger.log_message("warning", "Event handler not initialized, cannot emit event")
+            return
+
+        try:
+            event_data = SettingsBatchUpdateEvent(
+                updated_keys=updated_keys,
+                timestamp=datetime.now().isoformat()
+            )
+            Emitter.emit(self._app_handle, "settings-batch-update", event_data)
+            logger.log_message("info", f"Settings batch update event emitted: {len(updated_keys)} settings")
+        except Exception as e:
+            logger.log_message("error", f"Failed to emit settings batch update event: {e}")
 
     @property
     def is_initialized(self) -> bool:

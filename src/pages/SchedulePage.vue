@@ -189,7 +189,6 @@ import {
     getCurrentWeek,
     getCurrentWeekInfo,
     setSemesterStartDate,
-    setCurrentWeek,
     getCourses,
     addCourse,
     getSchedule,
@@ -305,10 +304,6 @@ const minutesToTime = (minutes) => {
 const handleWeekChange = async (newWeek) => {
     currentWeek.value = parseInt(newWeek);
     await loadSchedule();
-    // 如果不是自动计算的周数，更新设置中的当前周数
-    if (!isCalculatedWeek.value) {
-        await setCurrentWeek(currentWeek.value);
-    }
 };
 
 const handleSemesterStartDateChange = async () => {

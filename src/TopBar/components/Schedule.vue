@@ -1,9 +1,6 @@
 <template>
   <div class="schedule-container">
-    <mdui-linear-progress
-      class="currentClass"
-      :class="{ 'break-time': isBreakTime }"
-      :value="progress"
+    <mdui-linear-progress class="currentClass" id="progress" :class="{ 'break-time': isBreakTime }" :value="progress"
       :data-text="displayText">
     </mdui-linear-progress>
   </div>
@@ -37,6 +34,8 @@ const isBreakTime = ref(false);
 let intervalId = null;
 let updateIntervalId = null;
 let unlistenScheduleUpdate = null;
+
+let progressElement = null;
 
 // 格式化剩余时间
 const formatRemainingTime = (seconds) => {
@@ -119,9 +118,11 @@ const updateDisplay = () => {
       const remainingTimeStr = formatRemainingTime(remainingSeconds);
       const nextLocation = todayNext.location ? ` @ ${todayNext.location}` : '';
       displayText.value = `下一节: ${todayNext.name}${nextLocation} (${remainingTimeStr}后)`;
+      rewidthProgressBar();
     } else {
       const locationText = location ? ` @ ${location}` : '';
       displayText.value = `${name}${locationText} (${start_time}-${end_time})`;
+      rewidthProgressBar();
     }
 
     progress.value = calculateProgress();
@@ -134,11 +135,13 @@ const updateDisplay = () => {
       const remainingTimeStr = formatRemainingTime(remainingSeconds);
       const nextLocation = todayNext.location ? ` @ ${todayNext.location}` : '';
       displayText.value = `下一节: ${todayNext.name}${nextLocation} (${remainingTimeStr}后)`;
+      rewidthProgressBar();
       progress.value = calculateProgress();
     } else {
       // 应该已经开始了，触发刷新
       const nextLocation = todayNext.location ? ` @ ${todayNext.location}` : '';
       displayText.value = `${todayNext.name}${nextLocation} (即将开始)`;
+      rewidthProgressBar();
       progress.value = 0;
       loadScheduleData();
     }
@@ -148,11 +151,13 @@ const updateDisplay = () => {
     const dayNames = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
     const dayName = dayNames[nextAcrossWeek.day_of_week] || '未知';
     displayText.value = `今日课程结束 - 下一节: ${dayName} ${nextAcrossWeek.name}`;
+    rewidthProgressBar();
     progress.value = 0;
   } else {
     // 没有任何课程
     isBreakTime.value = false;
     displayText.value = '暂无课程';
+    rewidthProgressBar();
     progress.value = 0;
   }
 };
@@ -191,6 +196,34 @@ const updateTimeAndProgress = () => {
   updateDisplay();
 };
 
+const rewidthProgressBar = () => {
+  if (progressElement) {
+    const text = displayText.value || '';
+    // create hidden span to measure real rendered width
+    const span = document.createElement('span');
+    span.textContent = text;
+    span.style.position = 'absolute';
+    span.style.visibility = 'hidden';
+    span.style.whiteSpace = 'nowrap';
+    span.style.fontSize = '1rem';
+    span.style.fontWeight = '500';
+    span.style.fontFamily = getComputedStyle(progressElement).fontFamily || 'inherit';
+    document.body.appendChild(span);
+    const widthPx = span.getBoundingClientRect().width;
+    document.body.removeChild(span);
+
+    // convert px -> rem based on root font-size
+    const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const widthRem = widthPx / rootFontSize;
+
+    // add padding and clamp to reasonable bounds
+    const paddedRem = widthRem + 1; // 1rem padding (adjust if needed)
+    const minRem = 4;
+    const maxRem = 24;
+    progressElement.style.width = Math.min(maxRem, Math.max(minRem, paddedRem)) + 'rem';
+  }
+};
+
 onMounted(async () => {
   // 初次加载
   await loadScheduleData();
@@ -200,6 +233,8 @@ onMounted(async () => {
 
   // 每秒更新显示（使用缓存数据）
   updateIntervalId = setInterval(updateTimeAndProgress, 1000);
+
+  progressElement = document.getElementById('progress');
 
   // 监听课表更新事件
   try {
@@ -238,9 +273,7 @@ onUnmounted(() => {
 }
 
 /* 课间时间的样式 */
-.currentClass.break-time {
-  
-}
+.currentClass.break-time {}
 
 .currentClass::after {
   content: attr(data-text);

@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/core';
 import { pyInvoke } from 'tauri-plugin-pytauri-api';
 
 // 星期映射
@@ -85,19 +84,6 @@ export async function getCurrentWeek() {
   } catch (error) {
     console.error('Failed to get current week:', error);
     return 1;
-  }
-}
-
-/**
- * 设置当前周数（已废弃 - 建议使用学期开始日期）
- */
-export async function setCurrentWeek(week) {
-  try {
-    await pyInvoke('set_config', { key: 'current_week', value: String(week) });
-    return true;
-  } catch (error) {
-    console.error('Failed to set current week:', error);
-    return false;
   }
 }
 

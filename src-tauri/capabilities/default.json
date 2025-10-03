@@ -2,11 +2,19 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main", "topbar"],
+  "windows": [
+    "main",
+    "topbar"
+  ],
   "permissions": [
     "core:default",
     "opener:default",
     "pytauri:default",
-    "core:window:allow-set-title"
+    "core:window:allow-set-title",
+    "clipboard-manager:default",
+    "clipboard-manager:allow-write-text",
+    "clipboard-manager:allow-clear",
+    "clipboard-manager:allow-write-image",
+    "clipboard-manager:deny-write-html"
   ]
 }

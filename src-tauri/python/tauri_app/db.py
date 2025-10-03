@@ -8,8 +8,9 @@ APP_DIR = Path.home() / ".classtop"
 APP_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = APP_DIR / "app_config.db"
 
-# Global schedule manager instance
+# Global managers
 schedule_manager = None
+settings_manager = None
 
 
 def init_db() -> None:
@@ -88,57 +89,76 @@ def set_schedule_manager(manager) -> None:
     logger.log_message("info", "Schedule manager instance set")
 
 
-# Configuration management functions
+def set_settings_manager(manager) -> None:
+    """Set the global settings manager instance."""
+    global settings_manager
+    settings_manager = manager
+    logger.log_message("info", "Settings manager instance set")
+
+
+# Configuration management functions - delegated to settings manager
 def set_config(key: str, value: str) -> None:
     """Set a configuration value."""
-    logger.log_message("debug", f"Setting config: {key} = {value}")
-
-    conn = sqlite3.connect(DB_PATH)
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-            (key, value),
-        )
-        conn.commit()
-        logger.log_message("info", f"Config set: {key} = {value}")
-    except Exception as e:
-        logger.log_message("error", f"Error setting config for key '{key}': {e}")
-    finally:
-        conn.close()
+    global settings_manager
+    if settings_manager:
+        settings_manager.set_setting(key, value)
+    else:
+        # Fallback to direct database access if manager not initialized
+        logger.log_message("warning", "Settings manager not initialized, using direct DB access")
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (key, value),
+            )
+            conn.commit()
+            logger.log_message("info", f"Config set: {key} = {value}")
+        except Exception as e:
+            logger.log_message("error", f"Error setting config for key '{key}': {e}")
+        finally:
+            conn.close()
 
 
 def get_config(key: str) -> Optional[str]:
     """Get a configuration value."""
-    conn = sqlite3.connect(DB_PATH)
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT value FROM settings WHERE key=?", (key,))
-        row = cur.fetchone()
-        value = row[0] if row else None
-        logger.log_message("debug", f"Config retrieved: {key} = {value}")
-        return value
-    except Exception as e:
-        logger.log_message("error", f"Error getting config for key '{key}': {e}")
-        return None
-    finally:
-        conn.close()
+    global settings_manager
+    if settings_manager:
+        return settings_manager.get_setting(key)
+    else:
+        # Fallback to direct database access
+        logger.log_message("warning", "Settings manager not initialized, using direct DB access")
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT value FROM settings WHERE key=?", (key,))
+            row = cur.fetchone()
+            return row[0] if row else None
+        except Exception as e:
+            logger.log_message("error", f"Error getting config for key '{key}': {e}")
+            return None
+        finally:
+            conn.close()
 
 
 def list_configs() -> Dict[str, str]:
     """List all configuration values."""
-    conn = sqlite3.connect(DB_PATH)
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT key, value FROM settings")
-        configs = {k: v for k, v in cur.fetchall()}
-        logger.log_message("debug", f"Listed {len(configs)} configs")
-        return configs
-    except Exception as e:
-        logger.log_message("error", f"Error listing configs: {e}")
-        return {}
-    finally:
-        conn.close()
+    global settings_manager
+    if settings_manager:
+        return settings_manager.get_all_settings()
+    else:
+        # Fallback to direct database access
+        logger.log_message("warning", "Settings manager not initialized, using direct DB access")
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT key, value FROM settings")
+            return {k: v for k, v in cur.fetchall()}
+        except Exception as e:
+            logger.log_message("error", f"Error listing configs: {e}")
+            return {}
+        finally:
+            conn.close()
 
 
 # Course management functions - delegated to schedule manager

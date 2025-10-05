@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tauri::{LogicalPosition, LogicalSize, Manager};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -13,24 +13,30 @@ pub fn tauri_generate_context() -> tauri::Context {
 
 // Window commands
 #[tauri::command]
-async fn setup_topbar_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+async fn setup_topbar_window(app_handle: tauri::AppHandle, height: u32) -> Result<(), String> {
     let window = app_handle
         .get_webview_window("topbar")
         .ok_or("Window not found")?;
 
     if let Ok(monitors) = window.available_monitors() {
         if let Some(monitor) = monitors.first() {
+            // 获取 scale factor 用于转换物理像素到逻辑像素
+            let scale_factor = monitor.scale_factor();
+
+            // monitor.size() 返回物理像素，转换为逻辑像素
             let screen_size = monitor.size();
-            let screen_width = screen_size.width;
+            let logical_screen_width = (screen_size.width as f64 / scale_factor) as u32;
 
-            let window_width = (screen_width as f64 * 0.6) as u32;
-            let window_x = (screen_width as f64 * 0.2) as i32;
+            // 计算逻辑像素下的窗口宽度和位置
+            let window_width = (logical_screen_width as f64 * 0.6) as u32;
+            let window_x = (logical_screen_width as f64 * 0.2) as i32;
 
+            // 使用 LogicalSize 和 LogicalPosition，Tauri 会自动处理 DPI 缩放
             window
-                .set_size(PhysicalSize::new(window_width, 50))
+                .set_size(LogicalSize::new(window_width, height))
                 .map_err(|e| e.to_string())?;
             window
-                .set_position(PhysicalPosition::new(window_x, 0))
+                .set_position(LogicalPosition::new(window_x, 0))
                 .map_err(|e| e.to_string())?;
         }
     }
@@ -50,17 +56,22 @@ async fn resize_topbar_window(
 
     if let Ok(monitors) = window.available_monitors() {
         if let Some(monitor) = monitors.first() {
+            // 获取 scale factor 用于转换物理像素到逻辑像素
+            let scale_factor = monitor.scale_factor();
+
+            // monitor.size() 返回物理像素，转换为逻辑像素
             let screen_size = monitor.size();
-            let screen_width = screen_size.width;
+            let logical_screen_width = (screen_size.width as f64 / scale_factor) as u32;
 
-            // Calculate x position to center the window horizontally
-            let window_x = ((screen_width - width) / 2) as i32;
+            // 计算逻辑像素下的窗口 x 位置（居中）
+            let window_x = ((logical_screen_width - width) / 2) as i32;
 
+            // 使用 LogicalSize 和 LogicalPosition，Tauri 会自动处理 DPI 缩放
             window
-                .set_size(PhysicalSize::new(width, height))
+                .set_size(LogicalSize::new(width, height))
                 .map_err(|e| e.to_string())?;
             window
-                .set_position(PhysicalPosition::new(window_x, 0))
+                .set_position(LogicalPosition::new(window_x, 0))
                 .map_err(|e| e.to_string())?;
         }
     }

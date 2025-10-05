@@ -135,13 +135,28 @@ class SystemTray:
             self.tray = TrayIcon(app_handle)
 
             # Set tray icon (using 32x32.png for system tray)
-            icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "icons", "32x32.png")
+            # Use Tauri's resource path to handle both dev and production environments
+            try:
+                path_resolver = Manager.path(app_handle)
+                resource_dir = path_resolver.resource_dir()
+                icon_path = resource_dir / "icons" / "32x32.png"
 
-            # Load icon as Image object
-            with open(icon_path, 'rb') as f:
-                icon_data = f.read()
-            icon_image = Image.from_bytes(icon_data)
-            self.tray.set_icon(icon_image)
+                # Log the path for debugging
+                logger.log_message("info", f"Trying resource path: {icon_path}")
+
+                if not icon_path.exists():
+                    # Fallback to relative path for dev environment
+                    icon_path = os.path.join(os.path.dirname(__file__), "..", "..", "icons", "32x32.png")
+                    logger.log_message("info", f"Resource path not found, trying relative path: {icon_path}")
+
+                # Load icon as Image object
+                with open(icon_path, 'rb') as f:
+                    icon_data = f.read()
+                icon_image = Image.from_bytes(icon_data)
+                self.tray.set_icon(icon_image)
+            except Exception as e:
+                logger.log_message("error", f"Failed to load icon: {e}")
+                raise
 
             # Set tooltip
             self.tray.set_tooltip("ClassTop - System Tray")

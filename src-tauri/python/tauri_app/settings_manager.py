@@ -18,6 +18,8 @@ class SettingsManager:
         # 外观设置
         'theme_mode': 'auto',  # auto, dark, light
         'theme_color': '#6750A4',  # Material Design default purple
+        
+        'topbar_height': '3',  # 顶栏高度(rem)
 
         # 组件设置
         'show_clock': 'true',

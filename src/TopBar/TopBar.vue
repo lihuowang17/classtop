@@ -38,7 +38,17 @@ const scheduleKey = ref(Date.now());
 onMounted(async () => {
     document.body.classList.add("topbar")
     try {
-        await invoke('setup_topbar_window');
+        // 计算顶栏高度的实际像素高度
+        const d = document.createElement('div');
+        d.style.height = `${settings.topbar_height}rem`;
+        d.style.position = 'absolute';
+        d.style.visibility = 'hidden';
+        document.body.appendChild(d);
+        height = d.clientHeight;
+        d.remove();
+
+        await invoke('setup_topbar_window', { height });
+        console.log('Top bar window setup invoked successfully.', height);
         document.body.style.borderRadius = "0 0 15px 15px";
 
         setTimeout(() => {
@@ -54,7 +64,7 @@ onMounted(async () => {
 
     // 监听设置更新事件
     try {
-        await listen('setting-update', (event) => {
+        await listen('setting-update', async (event) => {
             console.log('Setting update received in TopBar:', event.payload);
             let value = event.payload.value;
             // 对于字符串'boolean'类型的设置，需要转换为布尔值
@@ -63,6 +73,20 @@ onMounted(async () => {
             }
             // 更新对应的设置
             settings[event.payload.key] = value;
+
+            if (event.payload.key === 'topbar_height') {
+                // 重新计算顶栏高度的实际像素高度
+                const d = document.createElement('div');
+                d.style.height = `${settings.topbar_height}rem`;
+                d.style.position = 'absolute';
+                d.style.visibility = 'hidden';
+                document.body.appendChild(d);
+                height = d.clientHeight;
+                d.remove();
+
+                await invoke('setup_topbar_window', { height });
+                console.log('Top bar height updated:', height);
+            }
         });
 
         // 监听批量设置更新事件 - 刷新 Schedule 组件
@@ -132,11 +156,12 @@ export const isPinned = ref(false);
 export const topbarType = ref(["full", "thin"][0]) // 'full' or 'thin'
 var fullWidth = 1024
 var thinWidth = '10rem'
+let height = 50
 
 export const setFullTopbar = async () => {
-    await invoke('resize_topbar_window', { width: fullWidth, height: 50 })
+    await invoke('resize_topbar_window', { width: fullWidth, height: height })
     document.body.style.width = `${fullWidth}px`
-    document.body.style.height = `50px`
+    document.body.style.height = `${height}px`
     document.body.style.borderRadius = "0 0 15px 15px";
     document.getElementById("app").style.backgroundColor = ""
     topbarType.value = 'full'

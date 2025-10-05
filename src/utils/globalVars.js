@@ -17,6 +17,8 @@ export const settings = reactive({
   theme_mode: 'auto', // 'auto' | 'dark' | 'light'
   theme_color: '#6750A4',
 
+  topbar_height: '3', // 顶栏高度(rem)
+
   // 组件设置
   show_clock: true,
   show_schedule: true,
@@ -56,6 +58,7 @@ export async function loadSettings() {
     settings.server_url = allSettings.server_url || '';
     settings.theme_mode = allSettings.theme_mode || 'auto';
     settings.theme_color = allSettings.theme_color || '#6750A4';
+    settings.topbar_height = allSettings.topbar_height || '3';
     settings.show_clock = allSettings.show_clock === 'true';
     settings.show_schedule = allSettings.show_schedule === 'true';
     settings.semester_start_date = allSettings.semester_start_date || '';

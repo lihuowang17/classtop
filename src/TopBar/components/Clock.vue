@@ -58,7 +58,7 @@ onUnmounted(() => {
 
 @media (max-width: 800px) {
   .time-display {
-    font-size: 1.2rem;
+    font-size: 1.55rem;
   }
 }
 </style>

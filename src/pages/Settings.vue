@@ -47,6 +47,12 @@
             <span style="font-family: monospace; font-size: 0.875rem;">{{ settings.theme_color }}</span>
           </div>
         </mdui-list-item>
+        <mdui-list-item icon="height" rounded nonclickable>
+          顶栏高度
+          <mdui-slider min="0" max="8" step="0.1" :value="settings.topbar_height" id="topbar-height-slider"
+            @change="saveSetting('topbar_height', Number($event.target.value).toFixed(1))" style="width: 200px;"
+            slot="end-icon"></mdui-slider>
+        </mdui-list-item>
       </mdui-list>
     </mdui-card>
 
@@ -98,6 +104,7 @@
 import { snackbar } from 'mdui';
 import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
 import { settings, saveSetting, saveSettings, regenerateUUID, resetSettings, setThemeMode, applyColorScheme } from '../utils/globalVars';
+import { onMounted } from 'vue';
 
 // 复制 UUID
 async function copyUUID() {
@@ -124,7 +131,7 @@ async function handleRegenerateUUID() {
 async function handleThemeModeChange(event) {
   if (event.target.value) {
     await setThemeMode(event.target.value);
-  }else {
+  } else {
     await setThemeMode(settings.theme_mode);
   }
 
@@ -175,6 +182,16 @@ async function handleResetSettings() {
     snackbar({ message: '重置失败', placement: 'top' });
   }
 }
+
+onMounted(() => {
+  const slider = document.getElementById('topbar-height-slider');
+  if (slider) {
+    slider.labelFormatter = (value) => {
+      return `${Number(value).toFixed(1)} rem`;
+    };
+  }
+})
+
 </script>
 
 <style lang="less" scoped>

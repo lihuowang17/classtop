@@ -342,7 +342,7 @@ export let current = null;
   }
 
   .currentClass::after {
-    font-size: 0.75rem;
+    font-size: 0.9rem;
   }
 }
 </style>

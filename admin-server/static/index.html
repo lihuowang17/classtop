@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClassTop 监控管理系统</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>📹 ClassTop 监控管理系统</h1>
+            <div class="header-info">
+                <span class="status-indicator" id="serverStatus">
+                    <span class="status-dot online"></span>
+                    服务器运行中
+                </span>
+                <span id="clientCount">在线客户端: <strong>0</strong></span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar - Client List -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2>客户端列表</h2>
+                    <button class="btn btn-sm btn-primary" onclick="refreshClients()">
+                        🔄 刷新
+                    </button>
+                </div>
+                <div class="client-list" id="clientList">
+                    <div class="empty-state">暂无客户端连接</div>
+                </div>
+            </aside>
+
+            <!-- Main Panel -->
+            <main class="main-panel">
+                <div class="welcome-message" id="welcomeMessage">
+                    <div class="welcome-icon">📹</div>
+                    <h2>ClassTop 监控管理系统</h2>
+                    <p>请从左侧选择一个客户端开始管理监控系统</p>
+                </div>
+
+                <!-- Client Details (hidden initially) -->
+                <div class="client-details" id="clientDetails" style="display: none;">
+                    <!-- Client Info -->
+                    <section class="section">
+                        <h2>客户端信息</h2>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>UUID:</label>
+                                <span id="clientUuid">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>IP地址:</label>
+                                <span id="clientIp">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>状态:</label>
+                                <span id="clientStatus">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>最后在线:</label>
+                                <span id="clientLastSeen">-</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Tabs -->
+                    <div class="tabs">
+                        <button class="tab-btn active" onclick="switchTab('settings')">⚙️ 设置管理</button>
+                        <button class="tab-btn" onclick="switchTab('camera')">📹 摄像头监控</button>
+                    </div>
+
+                    <!-- Settings Tab -->
+                    <div class="tab-content" id="settingsTab">
+                        <section class="section">
+                            <div class="section-header">
+                                <h3>系统设置</h3>
+                                <button class="btn btn-sm btn-primary" onclick="loadSettings()">🔄 刷新</button>
+                            </div>
+                            <div class="settings-list" id="settingsList">
+                                <div class="loading">加载中...</div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- Camera Tab -->
+                    <div class="tab-content" id="cameraTab" style="display: none;">
+                        <!-- Camera Preview -->
+                        <section class="section">
+                            <div class="section-header">
+                                <h3>🎥 实时预览</h3>
+                                <div class="button-group">
+                                    <button class="btn btn-sm btn-success" onclick="startPreview()" id="startPreviewBtn">
+                                        ▶️ 开始预览
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="stopPreview()" id="stopPreviewBtn" disabled>
+                                        ⏹️ 停止预览
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="preview-container" id="previewContainer">
+                                <img id="previewImage" src="" alt="摄像头预览" style="display: none;">
+                                <div class="empty-state" id="previewPlaceholder">点击"开始预览"查看摄像头画面</div>
+                            </div>
+                        </section>
+
+                        <!-- Camera Status -->
+                        <section class="section">
+                            <div class="section-header">
+                                <h3>📊 摄像头状态</h3>
+                                <button class="btn btn-sm btn-primary" onclick="initializeCamera()">🚀 初始化摄像头</button>
+                            </div>
+                            <div id="cameraStatus">
+                                <div class="empty-state">请先初始化摄像头系统</div>
+                            </div>
+                        </section>
+
+                        <!-- Camera List -->
+                        <section class="section">
+                            <div class="section-header">
+                                <h3>📷 可用摄像头</h3>
+                                <button class="btn btn-sm btn-primary" onclick="loadCameras()">🔄 刷新</button>
+                            </div>
+                            <div class="camera-list" id="cameraList">
+                                <div class="loading">未加载</div>
+                            </div>
+                        </section>
+
+                        <!-- Recording Controls -->
+                        <section class="section">
+                            <h3>⏺️ 录制控制</h3>
+                            <div class="recording-controls">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>摄像头:</label>
+                                        <select id="selectedCamera">
+                                            <option value="0">摄像头 0</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>编码格式:</label>
+                                        <select id="codecType">
+                                            <option value="">默认 (H.264)</option>
+                                            <option value="H.264">H.264 (AVC)</option>
+                                            <option value="H.265">H.265 (HEVC)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>分辨率:</label>
+                                        <select id="resolution">
+                                            <option value="">默认 (1280x720)</option>
+                                            <option value="1920x1080">1920x1080 (1080p)</option>
+                                            <option value="1280x720">1280x720 (720p)</option>
+                                            <option value="640x480">640x480 (480p)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>比特率:</label>
+                                        <select id="bitrate">
+                                            <option value="">默认 (5M)</option>
+                                            <option value="10M">10M (高质量)</option>
+                                            <option value="5M">5M (标准)</option>
+                                            <option value="3M">3M (较低)</option>
+                                            <option value="1M">1M (极低)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="button-group">
+                                    <button class="btn btn-success" onclick="startRecording()" id="startRecBtn">
+                                        ⏺️ 开始录制
+                                    </button>
+                                    <button class="btn btn-danger" onclick="stopRecording()" id="stopRecBtn" disabled>
+                                        ⏹️ 停止录制
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="recording-status" id="recordingStatus" style="display: none;">
+                                <div class="status-indicator recording">
+                                    <span class="status-dot-recording"></span>
+                                    <span id="recordingInfo">正在录制...</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Encoder Info -->
+                        <section class="section">
+                            <div class="section-header">
+                                <h3>🔧 可用编码器</h3>
+                            </div>
+                            <div id="encoderInfo">
+                                <div class="loading">未加载</div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Edit Setting Modal -->
+    <div class="modal" id="editSettingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>编辑设置</h3>
+                <button class="modal-close" onclick="closeEditSettingDialog()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label id="settingKeyLabel">设置项:</label>
+                    <input type="text" id="settingValue" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditSettingDialog()">取消</button>
+                <button class="btn btn-primary" onclick="saveSetting()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

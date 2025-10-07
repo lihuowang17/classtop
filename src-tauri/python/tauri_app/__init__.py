@@ -25,6 +25,7 @@ def main() -> int:
     from .events import event_handler
     from .schedule_manager import ScheduleManager
     from .settings_manager import SettingsManager
+    from .camera_manager import CameraManager
     from .api_server import APIServer
     from . import db as _db
 
@@ -55,6 +56,42 @@ def main() -> int:
             # Initialize schedule manager with event handler
             schedule_manager = ScheduleManager(_db.DB_PATH, event_handler)
             _db.set_schedule_manager(schedule_manager)
+
+            # Initialize WebSocket client for admin server (before camera manager)
+            ws_client = None
+            try:
+                from .websocket_client import WebSocketClient
+
+                server_url = settings_manager.get_setting('server_url')
+                client_uuid = settings_manager.get_setting('client_uuid')
+
+                if server_url and client_uuid:
+                    ws_client = WebSocketClient(server_url, client_uuid, settings_manager, portal)
+                    # Note: ws_client.start() will be called after camera_manager initialization
+                    _logger.log_message("info", "WebSocket client created")
+                else:
+                    _logger.log_message("info", "WebSocket client not created: server_url or client_uuid not configured")
+            except Exception as e:
+                _logger.log_message("error", f"Failed to create WebSocket client: {e}")
+
+            # Initialize camera manager if enabled (with WebSocket client reference)
+            camera_enabled = settings_manager.get_setting('camera_enabled')
+            if camera_enabled == 'true':
+                try:
+                    camera_manager = CameraManager(settings_manager, event_handler, ws_client)
+                    _db.set_camera_manager(camera_manager)
+                    camera_manager.initialize()
+                except Exception as e:
+                    _logger.log_message(
+                        "warning", f"Failed to initialize camera manager: {e}")
+
+            # Start WebSocket client after camera manager is initialized
+            if ws_client:
+                try:
+                    portal.call(ws_client.start)
+                    _logger.log_message("info", "WebSocket client started")
+                except Exception as e:
+                    _logger.log_message("error", f"Failed to start WebSocket client: {e}")
 
             _logger.log_message(
                 "info", "All managers initialized successfully")

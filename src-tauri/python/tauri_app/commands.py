@@ -342,3 +342,161 @@ async def reset_settings(body: Dict) -> Dict:
         return {"success": success}
     else:
         return {"success": False, "message": "Settings manager not available"}
+
+
+# Camera commands
+class CameraInitResponse(BaseModel):
+    success: bool
+    camera_count: int
+    message: str
+
+
+class CameraListResponse(BaseModel):
+    cameras: List[Dict]
+
+
+class CameraEncodersResponse(BaseModel):
+    h264: Dict
+    h265: Dict
+
+
+class StartRecordingRequest(BaseModel):
+    camera_index: int
+    filename: Optional[str] = None
+    codec_type: Optional[str] = None  # 'H.264' or 'H.265'
+    width: Optional[int] = None
+    height: Optional[int] = None
+    fps: Optional[int] = None
+    preset: Optional[str] = None
+    bitrate: Optional[str] = None
+
+
+class RecordingResponse(BaseModel):
+    success: bool
+    message: str
+
+
+class StopRecordingRequest(BaseModel):
+    camera_index: int
+
+
+class CameraStatusRequest(BaseModel):
+    camera_index: Optional[int] = None
+
+
+class CameraStatusResponse(BaseModel):
+    status: Dict
+
+
+@commands.command()
+async def initialize_camera() -> CameraInitResponse:
+    """Initialize camera monitoring system."""
+    if not _db.camera_manager:
+        return CameraInitResponse(
+            success=False,
+            camera_count=0,
+            message="Camera manager not available"
+        )
+
+    success = _db.camera_manager.initialize()
+    if success:
+        cameras = _db.camera_manager.get_cameras()
+        return CameraInitResponse(
+            success=True,
+            camera_count=len(cameras),
+            message=f"Camera system initialized with {len(cameras)} cameras"
+        )
+    else:
+        return CameraInitResponse(
+            success=False,
+            camera_count=0,
+            message="Failed to initialize camera system"
+        )
+
+
+@commands.command()
+async def get_cameras() -> CameraListResponse:
+    """Get list of available cameras."""
+    if not _db.camera_manager:
+        return CameraListResponse(cameras=[])
+
+    cameras = _db.camera_manager.get_cameras()
+    return CameraListResponse(cameras=cameras)
+
+
+@commands.command()
+async def get_camera_encoders() -> CameraEncodersResponse:
+    """Get available video encoders."""
+    if not _db.camera_manager:
+        return CameraEncodersResponse(
+            h264={"available": 0, "encoders": [], "preferred": "libx264"},
+            h265={"available": 0, "encoders": [], "preferred": "libx265"}
+        )
+
+    encoders = _db.camera_manager.get_encoders()
+    return CameraEncodersResponse(**encoders)
+
+
+@commands.command()
+async def start_camera_recording(body: StartRecordingRequest) -> RecordingResponse:
+    """Start recording from camera."""
+    if not _db.camera_manager:
+        return RecordingResponse(
+            success=False,
+            message="Camera manager not available"
+        )
+
+    success = _db.camera_manager.start_recording(
+        camera_index=body.camera_index,
+        filename=body.filename,
+        codec_type=body.codec_type,
+        width=body.width,
+        height=body.height,
+        fps=body.fps,
+        preset=body.preset,
+        bitrate=body.bitrate
+    )
+
+    if success:
+        return RecordingResponse(
+            success=True,
+            message=f"Recording started on camera {body.camera_index}"
+        )
+    else:
+        return RecordingResponse(
+            success=False,
+            message=f"Failed to start recording on camera {body.camera_index}"
+        )
+
+
+@commands.command()
+async def stop_camera_recording(body: StopRecordingRequest) -> RecordingResponse:
+    """Stop recording from camera."""
+    if not _db.camera_manager:
+        return RecordingResponse(
+            success=False,
+            message="Camera manager not available"
+        )
+
+    success = _db.camera_manager.stop_recording(body.camera_index)
+
+    if success:
+        return RecordingResponse(
+            success=True,
+            message=f"Recording stopped on camera {body.camera_index}"
+        )
+    else:
+        return RecordingResponse(
+            success=False,
+            message=f"Failed to stop recording on camera {body.camera_index}"
+        )
+
+
+@commands.command()
+async def get_camera_status(body: CameraStatusRequest) -> CameraStatusResponse:
+    """Get camera status."""
+    if not _db.camera_manager:
+        return CameraStatusResponse(status={"active_cameras": 0, "streamers": {}})
+
+    status = _db.camera_manager.get_status(body.camera_index)
+    return CameraStatusResponse(status=status)

@@ -11,6 +11,7 @@ DB_PATH = APP_DIR / "app_config.db"
 # Global managers
 schedule_manager = None
 settings_manager = None
+camera_manager = None
 
 
 def init_db() -> None:
@@ -94,6 +95,13 @@ def set_settings_manager(manager) -> None:
     global settings_manager
     settings_manager = manager
     logger.log_message("info", "Settings manager instance set")
+
+
+def set_camera_manager(manager) -> None:
+    """Set the global camera manager instance."""
+    global camera_manager
+    camera_manager = manager
+    logger.log_message("info", "Camera manager instance set")
 
 
 # Configuration management functions - delegated to settings manager

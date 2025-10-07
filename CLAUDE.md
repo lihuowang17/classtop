@@ -11,6 +11,7 @@ ClassTop is a desktop course management and display tool built with Tauri 2 + Vu
 - SQLite-based data persistence
 - System tray integration
 - Automatic/manual week number calculation
+- RESTful API server for centralized management (optional)
 
 ## Tech Stack
 
@@ -139,6 +140,7 @@ Located in `src/TopBar/components/Schedule.vue` and `src/utils/schedule.js`:
 - `db.py`: Raw SQLite operations, connection management
 - `schedule_manager.py`: Business logic for schedule CRUD (uses db.py, emits events)
 - `settings_manager.py`: Manages application settings with defaults
+- `api_server.py`: Optional HTTP API server for remote management (FastAPI-based)
 - `events.py`: Thread-safe singleton event handler
 - `tray.py`: System tray menu (show/hide windows, quit)
 - `logger.py`: Logging utilities with file rotation
@@ -150,7 +152,8 @@ Located in `src/TopBar/components/Schedule.vue` and `src/utils/schedule.js`:
 4. Database
 5. Settings manager (initializes defaults)
 6. Schedule manager
-7. System tray
+7. API server (if enabled in settings)
+8. System tray
 
 ### Frontend Module Structure
 
@@ -167,6 +170,45 @@ Located in `src/TopBar/components/Schedule.vue` and `src/utils/schedule.js`:
 - `pages/Settings.vue`: Week/semester settings
 - `utils/schedule.js`: Shared utilities for time calculations, API calls (pyInvoke wrappers)
 - `router/index.js`: Route definitions
+
+### API Server (Optional)
+
+ClassTop includes an optional HTTP API server for centralized management and remote data access.
+
+**Location:** `src-tauri/python/tauri_app/api_server.py`
+
+**Features:**
+- RESTful HTTP endpoints for all CRUD operations
+- FastAPI-based implementation with automatic OpenAPI documentation
+- Runs in background daemon thread (non-blocking)
+- Configurable via settings (enabled/disabled, host, port)
+
+**Configuration Settings:**
+- `api_server_enabled`: "true"/"false" - Enable/disable API server
+- `api_server_host`: Default "0.0.0.0" - Listening address
+- `api_server_port`: Default "8765" - Listening port
+
+**Access Points:**
+- API Base: `http://localhost:8765/api/`
+- Swagger UI: `http://localhost:8765/api/docs`
+- ReDoc: `http://localhost:8765/api/redoc`
+
+**Initialization:**
+API server is conditionally initialized in `__init__.py:main()` after schedule/settings managers, only if `api_server_enabled` is "true".
+
+**Dependencies:**
+Requires `fastapi` and `uvicorn` packages. If not installed, API server silently disables with warning in logs.
+
+**Documentation:**
+- Full API reference: `docs/API.md`
+- Quick start guide: `docs/API_QUICKSTART.md`
+
+**Use Cases:**
+- Remote course management from external systems
+- Bulk data import/export
+- Centralized management of multiple ClassTop instances
+- Custom management dashboards
+- Automated data synchronization
 
 ## Important Patterns
 

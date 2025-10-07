@@ -15,10 +15,15 @@ class SettingsManager:
         'client_uuid': lambda: str(uuid.uuid4()),
         'server_url': '',
 
+        # API 服务器设置
+        'api_server_enabled': 'false',  # 是否启用 API 服务器
+        'api_server_host': '0.0.0.0',  # API 服务器监听地址
+        'api_server_port': '8765',  # API 服务器端口
+
         # 外观设置
         'theme_mode': 'auto',  # auto, dark, light
         'theme_color': '#6750A4',  # Material Design default purple
-        
+
         'topbar_height': '3',  # 顶栏高度(rem)
 
         # 组件设置

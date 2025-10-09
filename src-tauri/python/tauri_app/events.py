@@ -179,6 +179,24 @@ class EventHandler:
         except Exception as e:
             logger.log_message("error", f"Failed to emit settings batch update event: {e}")
 
+    def emit_camera_initialized(self, camera_count: int, encoder_info: Dict) -> None:
+        """Emit event when camera system is initialized."""
+        self.emit_string_event("camera-initialized",
+                               f"Camera system initialized: {camera_count} cameras found")
+        logger.log_message("info", f"Camera system initialized with {camera_count} cameras")
+
+    def emit_camera_recording_started(self, camera_index: int, filename: str) -> None:
+        """Emit event when recording starts."""
+        self.emit_string_event("camera-recording-started",
+                               f"Recording started on camera {camera_index}: {filename}")
+        logger.log_message("info", f"Recording started: camera {camera_index} -> {filename}")
+
+    def emit_camera_recording_stopped(self, camera_index: int) -> None:
+        """Emit event when recording stops."""
+        self.emit_string_event("camera-recording-stopped",
+                               f"Recording stopped on camera {camera_index}")
+        logger.log_message("info", f"Recording stopped on camera {camera_index}")
+
     @property
     def is_initialized(self) -> bool:
         """Check if the event handler is initialized."""

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 from . import logger
 
+APP_DIR = Path.home() / ".classtop"
 
 class SettingsManager:
     """设置管理器，负责设置的初始化、读取和更新"""
@@ -32,6 +33,21 @@ class SettingsManager:
 
         # 课程设置
         'semester_start_date': '',
+
+        # 摄像头设置
+        'camera_enabled': 'true',  # 是否启用摄像头功能
+        'camera_width': '1280',  # 默认视频宽度
+        'camera_height': '720',  # 默认视频高度
+        'camera_fps': '30',  # 默认帧率
+        'camera_encoder_preference': 'hardware',  # 编码器偏好: hardware / software
+
+        # 编码器设置
+        'encoder_nvenc_preset': 'fast',  # NVENC 预设
+        'encoder_nvenc_bitrate': '5M',  # NVENC 比特率
+
+        # 录制设置
+        'recording_output_dir': f'{str(APP_DIR)}/recordings',  # 录制文件输出目录
+        'recording_filename_pattern': 'recording_%Y%m%d_%H%M%S',  # 文件名模式
     }
 
     def __init__(self, db_path: Path, event_handler):

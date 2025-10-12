@@ -10,7 +10,7 @@
             </div>
 
             <div class="right-section">
-                <span v-show="mouseOn">MouseOn</span>
+                <!--<span v-show="mouseOn">MouseOn</span>-->
                 <div class="control-buttons">
                     <mdui-button-icon id="pin-button" selectable icon="push_pin--outlined" selected-icon="push_pin"
                         @click="handlePin"></mdui-button-icon>
@@ -29,7 +29,7 @@ import { listen } from '@tauri-apps/api/event';
 import Clock from './components/Clock.vue';
 import Schedule, { progress as classProgress } from './components/Schedule.vue';
 import { loadSettings, settings } from '../utils/globalVars';
-import { mouseOn, init as initMouse } from '../utils/mouse';
+import { mouseOn, init as initCollapse, reset as resetCollapse } from '../utils/collapse';
 
 // 用于强制重载 Schedule 组件的 key
 const scheduleKey = ref(Date.now());
@@ -60,7 +60,7 @@ onMounted(async () => {
 
     isPinned.value = false;
 
-    initMouse()
+    initCollapse()
 
     // 监听设置更新事件
     try {
@@ -74,18 +74,26 @@ onMounted(async () => {
             // 更新对应的设置
             settings[event.payload.key] = value;
 
-            if (event.payload.key === 'topbar_height') {
-                // 重新计算顶栏高度的实际像素高度
-                const d = document.createElement('div');
-                d.style.height = `${settings.topbar_height}rem`;
-                d.style.position = 'absolute';
-                d.style.visibility = 'hidden';
-                document.body.appendChild(d);
-                height = d.clientHeight;
-                d.remove();
+            switch (event.payload.key) {
+                case 'topbar_height':
+                    // 重新计算顶栏高度的实际像素高度
+                    const d = document.createElement('div');
+                    d.style.height = `${settings.topbar_height}rem`;
+                    d.style.position = 'absolute';
+                    d.style.visibility = 'hidden';
+                    document.body.appendChild(d);
+                    height = d.clientHeight;
+                    d.remove();
 
-                await invoke('setup_topbar_window', { height });
-                console.log('Top bar height updated:', height);
+                    await invoke('setup_topbar_window', { height });
+                    console.log('Top bar height updated:', height);
+                    break;
+                case 'control_mode':
+                    await resetCollapse();
+                    break;
+                default:
+                    break;
+
             }
         });
 
@@ -102,9 +110,10 @@ onMounted(async () => {
                 console.log('Settings affecting schedule updated, reloading...');
                 forceReloadSchedule();
             }
-
             // 重新加载所有设置以确保同步
             loadSettings();
+
+            resetCollapse()
         });
     } catch (error) {
         console.error('Failed to setup setting update listener:', error);
@@ -141,7 +150,7 @@ const handleClassStart = () => {
 };
 
 const handleClassEnd = () => {
-        setFullTopbar()
+    setFullTopbar()
 };
 
 defineExpose({
@@ -174,7 +183,7 @@ export const setThinTopbar = async () => {
     topbarType.value = 'thin'
     document.getElementById("app").style.backgroundColor = "rgba(255, 255, 255, 0)"
     setTimeout(async () => {
-        if(!mouseOn.value) await invoke('resize_topbar_window', { width: document.body.clientWidth, height: document.body.clientHeight })
+        if (!mouseOn.value) await invoke('resize_topbar_window', { width: document.body.clientWidth, height: document.body.clientHeight })
     }, 700);
 
 }

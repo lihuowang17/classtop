@@ -22,6 +22,14 @@
             @blur="saveSetting('server_url', settings.server_url)" slot="end-icon">
           </mdui-text-field>
         </mdui-list-item>
+        <mdui-list-item icon="mouse" rounded nonclickable>
+          控制模式
+          <mdui-segmented-button-group selects="single" :value="settings.control_mode" @change="handleControlModeChange"
+            slot="end-icon">
+            <mdui-segmented-button value="touch" icon="touch_app">触摸屏</mdui-segmented-button>
+            <mdui-segmented-button value="mouse" icon="mouse">鼠标</mdui-segmented-button>
+          </mdui-segmented-button-group>
+        </mdui-list-item>
       </mdui-list>
     </mdui-card>
 
@@ -76,6 +84,19 @@
       </mdui-list>
     </mdui-card>
 
+    <!-- 监控设置 -->
+    <mdui-card class="settings-group">
+      <span class="group-title">监控设置</span>
+      <mdui-divider></mdui-divider>
+      <mdui-list>
+        <mdui-list-item icon="videocam" rounded>
+          启用摄像头功能
+          <mdui-switch :checked="settings.camera_enabled" @change="handleSwitchChange('camera_enabled', $event)" slot="end-icon">
+          </mdui-switch>
+        </mdui-list-item>
+      </mdui-list>
+    </mdui-card>
+
     <!-- 课程设置 -->
     <mdui-card class="settings-group">
       <span class="group-title">课程</span>
@@ -105,6 +126,14 @@ import { snackbar } from 'mdui';
 import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
 import { settings, saveSetting, saveSettings, regenerateUUID, resetSettings, setThemeMode, applyColorScheme } from '../utils/globalVars';
 import { onMounted } from 'vue';
+
+// 控制模式切换处理（触摸/鼠标）
+async function handleControlModeChange(event) {
+  const value = event.target.value || settings.control_mode;
+  settings.control_mode = value;
+  await saveSetting('control_mode', value);
+  snackbar({ message: `控制模式已切换为：${value === 'touch' ? '触摸屏' : '鼠标'}`, placement: 'top' });
+}
 
 // 复制 UUID
 async function copyUUID() {
@@ -162,6 +191,8 @@ async function handleSaveAll() {
     theme_color: settings.theme_color,
     show_clock: settings.show_clock,
     show_schedule: settings.show_schedule,
+      camera_enabled: settings.camera_enabled,
+      control_mode: settings.control_mode,
     semester_start_date: settings.semester_start_date,
   });
 

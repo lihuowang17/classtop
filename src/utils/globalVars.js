@@ -19,9 +19,14 @@ export const settings = reactive({
 
   topbar_height: '3', // 顶栏高度(rem)
 
+  // 控制模式: 'touch' | 'mouse'
+  control_mode: 'touch',
+
   // 组件设置
   show_clock: true,
   show_schedule: true,
+  // 监控（摄像头）设置
+  camera_enabled: false,
 
   // 课程设置
   semester_start_date: '',
@@ -61,6 +66,10 @@ export async function loadSettings() {
     settings.topbar_height = allSettings.topbar_height || '3';
     settings.show_clock = allSettings.show_clock === 'true';
     settings.show_schedule = allSettings.show_schedule === 'true';
+  // camera_enabled 存储为 'true'/'false'
+  settings.camera_enabled = allSettings.camera_enabled === 'true';
+    // control_mode 存储为字符串 'touch' 或 'mouse'
+    settings.control_mode = allSettings.control_mode || 'touch';
     settings.semester_start_date = allSettings.semester_start_date || '';
     settings.loaded = true;
 

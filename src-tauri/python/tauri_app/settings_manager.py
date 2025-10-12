@@ -34,8 +34,11 @@ class SettingsManager:
         # 课程设置
         'semester_start_date': '',
 
+        # 控制模式
+        'control_mode': 'touch',  # 'touch' or 'mouse'
+
         # 摄像头设置
-        'camera_enabled': 'true',  # 是否启用摄像头功能
+        'camera_enabled': 'false',  # 是否启用摄像头功能
         'camera_width': '1280',  # 默认视频宽度
         'camera_height': '720',  # 默认视频高度
         'camera_fps': '30',  # 默认帧率

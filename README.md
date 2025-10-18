@@ -102,6 +102,13 @@ classtop/
 - **[Xcode 配置指南](./docs/XCODE_SETUP.md)** - macOS 专用，用于高级调试和性能分析
 - **[Visual Studio 配置指南](./docs/VISUAL_STUDIO_SETUP.md)** - Windows 专用，用于高级调试和性能分析
 
+### 管理服务器文档
+
+- **[管理服务器改进方案](./docs/MANAGEMENT_SERVER_IMPROVEMENT_PLAN.md)** - admin-server 和 Management-Server 的对比和改进计划
+- **[快速同步指南](./docs/QUICK_START_SYNC.md)** - 5 步完成客户端与 Management-Server 的数据同步
+- **[客户端适配指南](./docs/CLIENT_ADAPTATION.md)** - 详细的客户端集成说明
+- **[集成任务清单](./docs/CLIENT_INTEGRATION_TODO.md)** - 集成 Management-Server 的完整任务列表
+
 ### 其他文档
 
 - **[项目架构说明](./CLAUDE.md)** - 详细的项目架构和开发指南
@@ -255,6 +262,44 @@ CREATE TABLE config (
     value TEXT
 );
 ```
+
+## 🔄 管理服务器集成
+
+ClassTop 支持两种管理服务器方案：
+
+### 1. admin-server (内置)
+
+**位置**: `admin-server/` 目录
+
+**功能**:
+- 🔌 WebSocket 实时控制
+- ⚙️ 远程设置管理
+- 📹 CCTV 监控管理
+
+**快速开始**:
+```bash
+cd admin-server
+pip install -r requirements.txt
+python main.py
+```
+
+访问 http://localhost:8000 查看管理界面。
+
+详见 [admin-server/README.md](./admin-server/README.md)
+
+### 2. Classtop-Management-Server (企业级)
+
+**仓库**: [Classtop-Management-Server](https://github.com/Zixiao-System/Classtop-Management-Server)
+
+**功能**:
+- 📊 多客户端数据同步
+- 📈 统计分析和可视化
+- 🗄️ PostgreSQL 数据持久化
+- 🎨 Vue 3 + MDUI 2 管理界面
+
+**集成指南**:
+- [快速同步指南](./docs/QUICK_START_SYNC.md) - 5 步完成数据同步
+- [客户端适配指南](./docs/CLIENT_ADAPTATION.md) - 完整集成说明
 
 ## 🎨 界面说明
 

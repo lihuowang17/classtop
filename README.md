@@ -51,7 +51,7 @@
 
 ## 📦 项目结构
 
-```
+```text
 classtop/
 ├── src/                          # 前端源代码
 │   ├── pages/                    # 页面组件
@@ -64,7 +64,10 @@ classtop/
 │   │       ├── Clock.vue        # 时钟组件
 │   │       └── Schedule.vue     # 课程进度组件
 │   ├── utils/                    # 工具函数
-│   │   └── schedule.js          # 课程相关工具函数
+│   │   ├── schedule.js          # 课程相关工具函数
+│   │   ├── globalVars.js        # 全局响应式变量管理
+│   │   ├── collapse.js          # 控制TopBar的折叠
+│   │   └── config.js            # 设置操作接口
 │   ├── App.vue                   # 主应用组件
 │   ├── Main.vue                  # 主窗口组件
 │   └── main.js                   # 入口文件
@@ -96,36 +99,42 @@ classtop/
 
 ### 安装依赖
 
-```bash
+Windows 开发环境常用步骤（已知项目使用 Node.js、Python 与 Rust）：
+
+```powershell
 # 安装前端依赖
+
 npm install
 
-# 安装 Tauri CLI (如果未安装)
+# （可选）安装 Tauri CLI 以便进行打包
 npm install -g @tauri-apps/cli
+
+# 安装 Python 依赖（如果使用内置 Python 环境）
+pip install -r requirements.txt
 ```
 
-### 开发模式
+### 开发模式（本地调试）
 
-```bash
-# 启动开发服务器（包含热重载）
+项目使用 Tauri + Vite，常见的开发命令：
+
+```powershell
+# 启动前端开发服务器并在 Tauri 中运行（依赖 package.json 中的脚本）
 npm run tauri dev
 ```
 
-这将启动两个窗口：
-
-- **主窗口 (main)**: 课程管理界面 (1200x800)
-- **顶部栏 (topbar)**: 置顶进度条 (1400x50)
+运行时通常会打开 TopBar 与主窗口（TopBar 用于置顶显示，主窗口用于完整管理界面）。
 
 ### 构建生产版本
 
-```bash
+使用 Tauri 的打包命令：
 
-# 构建应用程序
-npm run -- tauri build --config="src-tauri/tauri.bundle.json" -- --profile bundle-release
+```powershell
+# 构建并打包为可安装的桌面应用
+npm run tauri build -- --config src-tauri/tauri.bundle.json --profile bundle-release
 ```
 
-构建产物位于 `src-tauri/target/bundle-release/`
-
+构建产物通常位于 `src-tauri/target/bundle-release/` 下。
+ 
 ## 📖 核心功能说明
 
 ### 1. 课程进度显示
@@ -290,4 +299,4 @@ CREATE TABLE config (
 
 ---
 
-**Made with ❤️ by Classtop Team**
+Made with ❤️ by Classtop Team

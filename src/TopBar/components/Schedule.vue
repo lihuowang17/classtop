@@ -333,6 +333,7 @@ export let current = null;
   height: calc(100% - 4px);
   border-radius: 8px;
   margin-top: 4px;
+  border: 1px solid rgba(var(--mdui-color-on-surface), 0.3);
 }
 
 @media (max-width: 800px) {

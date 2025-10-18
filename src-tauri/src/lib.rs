@@ -93,7 +93,7 @@ async fn toggle_window(app_handle: tauri::AppHandle, window_name: String) -> Res
     } else {
         window.show().map_err(|e| e.to_string())?;
         // Try to focus the window after showing it
-        let _ = window.set_focus().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
     }
 
     Ok(!is_visible)

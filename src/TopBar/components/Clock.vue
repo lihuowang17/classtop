@@ -52,7 +52,7 @@ onUnmounted(() => {
 }
 
 .time-display {
-  font-size: 1.75rem;
+  font-size: 1.825rem;
   line-height: 1;
 }
 

@@ -266,8 +266,8 @@ const handleStartTimeChange = (newStartTime) => {
         const endMinutes = timeToMinutes(scheduleForm.value.end_time);
 
         if (startMinutes >= endMinutes) {
-            // 设置结束时间为开始时间后110分钟（一般课程时长）
-            const newEndMinutes = startMinutes + 110;
+            // 设置结束时间为开始时间后45分钟（一般课程时长）
+            const newEndMinutes = startMinutes + 45;
             scheduleForm.value.end_time = minutesToTime(newEndMinutes);
         }
     }
@@ -280,8 +280,8 @@ const handleEndTimeChange = (newEndTime) => {
         const endMinutes = timeToMinutes(newEndTime);
 
         if (endMinutes <= startMinutes) {
-            // 设置开始时间为结束时间前110分钟
-            const newStartMinutes = Math.max(0, endMinutes - 110);
+            // 设置开始时间为结束时间前45分钟
+            const newStartMinutes = Math.max(0, endMinutes - 45);
             scheduleForm.value.start_time = minutesToTime(newStartMinutes);
         }
     }

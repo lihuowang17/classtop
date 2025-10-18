@@ -67,6 +67,20 @@ const timeToSeconds = (timeStr) => {
   return h * 3600 + m * 60;
 };
 
+// 更新进度值并同步 CSS 变量（使用实际像素值）
+const updateProgress = (value) => {
+  progress.value = value;
+  if (progressElement) {
+    // 获取进度条元素的实际宽度
+    const elementWidth = progressElement.getBoundingClientRect().width;
+    // 计算进度条填充的实际像素位置
+    const fillPositionPx = elementWidth * value;
+
+    // 设置 CSS 变量（使用像素值而非百分比，避免计算误差）
+    progressElement.style.setProperty('--progress-fill-px', `${fillPositionPx}px`);
+  }
+};
+
 // 计算课程进度或课间进度
 const calculateProgress = () => {
   const now = currentTime.value;
@@ -158,7 +172,7 @@ const updateDisplay = () => {
       rewidthProgressBar();
     }
 
-    progress.value = calculateProgress();
+    updateProgress(calculateProgress());
   } else if (todayNext) {
     // 今天还有课 - 课间
     isBreakTime.value = true;
@@ -169,13 +183,13 @@ const updateDisplay = () => {
       const nextLocation = todayNext.location ? ` @ ${todayNext.location}` : '';
       displayText.value = `下一节: ${todayNext.name}${nextLocation} (${remainingTimeStr}后)`;
       rewidthProgressBar();
-      progress.value = calculateProgress();
+      updateProgress(calculateProgress());
     } else {
       // 应该已经开始了，触发刷新
       const nextLocation = todayNext.location ? ` @ ${todayNext.location}` : '';
       displayText.value = `${todayNext.name}${nextLocation} (即将开始)`;
       rewidthProgressBar();
-      progress.value = 0;
+      updateProgress(0);
       loadScheduleData();
     }
   } else if (nextAcrossWeek && nextAcrossWeek.day_of_week !== todayWeekday) {
@@ -186,13 +200,13 @@ const updateDisplay = () => {
     displayText.value = `今日课程结束 - 下一节: ${dayName} ${nextAcrossWeek.name}`;
     rewidthProgressBar();
     current = null;
-    progress.value = 0;
+    updateProgress(0);
   } else {
     // 没有任何课程
     isBreakTime.value = false;
     displayText.value = '暂无课程';
     rewidthProgressBar();
-    progress.value = 0;
+    updateProgress(0);
   }
 };
 
@@ -219,7 +233,7 @@ const loadScheduleData = async () => {
   } catch (error) {
     console.error('Failed to load schedule data:', error);
     displayText.value = '加载失败';
-    progress.value = 0;
+    updateProgress(0);
     isBreakTime.value = false;
   }
 };
@@ -255,6 +269,12 @@ const rewidthProgressBar = () => {
     const minRem = 4;
     const maxRem = 24;
     progressElement.style.width = Math.min(maxRem, Math.max(minRem, paddedRem)) + 'rem';
+
+    // 宽度改变后，重新计算进度填充的像素位置
+    // 使用 requestAnimationFrame 确保宽度已应用
+    requestAnimationFrame(() => {
+      updateProgress(progress.value);
+    });
   }
 };
 
@@ -314,18 +334,49 @@ export let current = null;
 /* 课间时间的样式 */
 .currentClass.break-time {}
 
+/* 底层文字 - 在浅色背景上显示（深色） */
+.currentClass::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  color: rgb(var(--mdui-color-on-surface-variant));
+  font-size: 1rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 顶层文字 - 在进度条填充区域显示（浅色） */
 .currentClass::after {
   content: attr(data-text);
   position: absolute;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: rgb(var(--mdui-color-on-surface));
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  color: rgb(var(--mdui-color-on-primary));
   font-size: 1rem;
   font-weight: 500;
   white-space: nowrap;
+  text-align: center;
   pointer-events: none;
-  z-index: 1;
+  z-index: 2;
+  /* 使用像素值精确裁剪，与进度条填充位置完全对应 */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black var(--progress-fill-px, 0px),
+    transparent var(--progress-fill-px, 0px)
+  );
+  mask-image: linear-gradient(
+    to right,
+    black var(--progress-fill-px, 0px),
+    transparent var(--progress-fill-px, 0px)
+  );
 }
 
 #mini-progress {

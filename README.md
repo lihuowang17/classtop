@@ -109,8 +109,14 @@ npm install
 # （可选）安装 Tauri CLI 以便进行打包
 npm install -g @tauri-apps/cli
 
-# 安装 Python 依赖（如果使用内置 Python 环境）
-pip install -r requirements.txt
+# 创建一个虚拟环境
+uv venv --python-preference only-system
+
+# 激活虚拟环境
+& .venv/Scripts/Activate.ps1
+
+# 安装依赖项
+uv pip install -e src-tauri
 ```
 
 ### 开发模式（本地调试）
@@ -128,9 +134,11 @@ npm run tauri dev
 
 使用 Tauri 的打包命令：
 
+- 首先根据 [PyTauri - Build Standalone Binary](https://pytauri.github.io/pytauri/latest/usage/tutorial/build-standalone/) 正确下载CPython到 `src-tauri\pyembed` 中
+
 ```powershell
 # 构建并打包为可安装的桌面应用
-npm run tauri build -- --config src-tauri/tauri.bundle.json --profile bundle-release
+./Build.ps1
 ```
 
 构建产物通常位于 `src-tauri/target/bundle-release/` 下。

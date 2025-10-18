@@ -1,6 +1,6 @@
-# ClassTop 管理后台
+# ClassTop LMS (Light Management Service)
 
-ClassTop 管理后台是一个基于 FastAPI 的远程管理服务器，用于集中控制多个 ClassTop 客户端。
+ClassTop LMS 是一个基于 FastAPI 的轻量级现场管理服务，用于本地网络环境下的实时控制和监控多个 ClassTop 客户端。
 
 ## 功能特性
 
@@ -15,7 +15,7 @@ ClassTop 管理后台是一个基于 FastAPI 的远程管理服务器，用于�
 ### 1. 安装依赖
 
 ```bash
-cd admin-server
+cd lms
 pip install -r requirements.txt
 ```
 
@@ -42,13 +42,15 @@ python main.py
 
 ## 架构说明
 
-### 服务器端 (`admin-server/`)
+### LMS 服务端 (`lms/`)
 
 ```
-admin-server/
+lms/
 ├── main.py                    # FastAPI 应用入口
 ├── websocket_manager.py       # WebSocket 连接管理
 ├── models.py                  # 数据模型
+├── db.py                      # SQLite 数据库层 (NEW)
+├── management_client.py       # Management-Server 连接客户端 (NEW)
 ├── api/
 │   ├── clients.py            # 客户端管理 API
 │   ├── settings.py           # 设置管理 API

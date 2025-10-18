@@ -87,6 +87,15 @@ onMounted(async () => {
 
                     await invoke('setup_topbar_window', { height });
                     console.log('Top bar height updated:', height);
+
+                    // 同步 DOM 高度和样式
+                    if (topbarType.value === 'full') {
+                        // 如果当前是 full 状态，同步更新 DOM
+                        document.body.style.height = `${height}px`;
+                        // 强制重绘以确保圆角等样式正确渲染
+                        void document.body.offsetHeight;
+                        document.body.style.borderRadius = "0 0 15px 15px";
+                    }
                     break;
                 case 'control_mode':
                     await resetCollapse();

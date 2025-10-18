@@ -58,7 +58,13 @@
         <mdui-list-item icon="height" rounded nonclickable>
           顶栏高度
           <mdui-slider min="0" max="8" step="0.1" :value="settings.topbar_height" id="topbar-height-slider"
-            @change="saveSetting('topbar_height', Number($event.target.value).toFixed(1))" style="width: 200px;"
+            @change="saveSetting('topbar_height', Number($event.target.value).toFixed(1))" style="width: 13rem;"
+            slot="end-icon"></mdui-slider>
+        </mdui-list-item>
+        <mdui-list-item icon="format_size" rounded nonclickable>
+          字体大小
+          <mdui-slider min="0" max="12" step="1" :value="settings.font_size - 12" id="font-size-slider"
+            @change="handleFontSizeChange(Number($event.target.value) + 12)" style="width: 13rem;"
             slot="end-icon"></mdui-slider>
         </mdui-list-item>
       </mdui-list>
@@ -91,7 +97,8 @@
       <mdui-list>
         <mdui-list-item icon="videocam" rounded>
           启用摄像头功能
-          <mdui-switch :checked="settings.camera_enabled" @change="handleSwitchChange('camera_enabled', $event)" slot="end-icon">
+          <mdui-switch :checked="settings.camera_enabled" @change="handleSwitchChange('camera_enabled', $event)"
+            slot="end-icon">
           </mdui-switch>
         </mdui-list-item>
       </mdui-list>
@@ -174,6 +181,12 @@ async function handleColorChange(event) {
   snackbar({ message: '主题颜色已更新', placement: 'top' });
 }
 
+// 字体大小调整
+async function handleFontSizeChange(size) {
+  await saveSetting('font_size', size);
+  snackbar({ message: '字体大小已更新', placement: 'top' });
+}
+
 // 开关切换
 async function handleSwitchChange(key, event) {
   const checked = event.target.checked;
@@ -189,10 +202,12 @@ async function handleSaveAll() {
     server_url: settings.server_url,
     theme_mode: settings.theme_mode,
     theme_color: settings.theme_color,
+    topbar_height: settings.topbar_height,
+    font_size: settings.font_size,
     show_clock: settings.show_clock,
     show_schedule: settings.show_schedule,
-      camera_enabled: settings.camera_enabled,
-      control_mode: settings.control_mode,
+    camera_enabled: settings.camera_enabled,
+    control_mode: settings.control_mode,
     semester_start_date: settings.semester_start_date,
   });
 
@@ -219,6 +234,13 @@ onMounted(() => {
   if (slider) {
     slider.labelFormatter = (value) => {
       return `${Number(value).toFixed(1)} rem`;
+    };
+  }
+
+  const fontSizeSlider = document.getElementById('font-size-slider');
+  if (fontSizeSlider) {
+    fontSizeSlider.labelFormatter = (value) => {
+      return `${Number(value) + 12} px`;
     };
   }
 })

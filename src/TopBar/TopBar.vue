@@ -76,26 +76,13 @@ onMounted(async () => {
 
             switch (event.payload.key) {
                 case 'topbar_height':
-                    // 重新计算顶栏高度的实际像素高度
-                    const d = document.createElement('div');
-                    d.style.height = `${settings.topbar_height}rem`;
-                    d.style.position = 'absolute';
-                    d.style.visibility = 'hidden';
-                    document.body.appendChild(d);
-                    height = d.clientHeight;
-                    d.remove();
-
-                    await invoke('setup_topbar_window', { height });
-                    console.log('Top bar height updated:', height);
-
-                    // 同步 DOM 高度和样式
-                    if (topbarType.value === 'full') {
-                        // 如果当前是 full 状态，同步更新 DOM
-                        document.body.style.height = `${height}px`;
-                        // 强制重绘以确保圆角等样式正确渲染
-                        void document.body.offsetHeight;
-                        document.body.style.borderRadius = "0 0 15px 15px";
-                    }
+                    await updateTopbarWindowSize();
+                    break;
+                case 'font_size':
+                    // 延时50ms以确保设置生效再更新窗口大小
+                    setTimeout(() => {
+                        updateTopbarWindowSize();
+                    }, 50);
                     break;
                 case 'control_mode':
                     await resetCollapse();
@@ -195,6 +182,29 @@ export const setThinTopbar = async () => {
         if (!mouseOn.value) await invoke('resize_topbar_window', { width: document.body.clientWidth, height: document.body.clientHeight })
     }, 700);
 
+}
+
+export const updateTopbarWindowSize = async () => {
+    // 重新计算顶栏高度的实际像素高度
+    const d = document.createElement('div');
+    d.style.height = `${settings.topbar_height}rem`;
+    d.style.position = 'absolute';
+    d.style.visibility = 'hidden';
+    document.body.appendChild(d);
+    height = d.clientHeight;
+    d.remove();
+
+    await invoke('setup_topbar_window', { height });
+    console.log('Top bar height updated:', height);
+
+    // 同步 DOM 高度和样式
+    if (topbarType.value === 'full') {
+        // 如果当前是 full 状态，同步更新 DOM
+        document.body.style.height = `${height}px`;
+        // 强制重绘以确保圆角等样式正确渲染
+        void document.body.offsetHeight;
+        document.body.style.borderRadius = "0 0 15px 15px";
+    }
 }
 
 </script>

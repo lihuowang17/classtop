@@ -18,6 +18,7 @@ export const settings = reactive({
   theme_color: '#6750A4',
 
   topbar_height: '3', // 顶栏高度(rem)
+  font_size: '16', // 全局字体大小(px)
 
   // 控制模式: 'touch' | 'mouse'
   control_mode: 'touch',
@@ -64,6 +65,7 @@ export async function loadSettings() {
     settings.theme_mode = allSettings.theme_mode || 'auto';
     settings.theme_color = allSettings.theme_color || '#6750A4';
     settings.topbar_height = allSettings.topbar_height || '3';
+    settings.font_size = allSettings.font_size || '16';
     settings.show_clock = allSettings.show_clock === 'true';
     settings.show_schedule = allSettings.show_schedule === 'true';
   // camera_enabled 存储为 'true'/'false'
@@ -208,6 +210,22 @@ export function applyTheme() {
   if (settings.theme_color && settings.theme_color !== '#6750A4') {
     applyColorScheme();
   }
+
+  // 应用字体大小
+  applyFontSize();
+}
+
+/**
+ * 应用字体大小设置
+ */
+export function applyFontSize() {
+  try {
+    const fontSize = settings.font_size || '16';
+    document.documentElement.style.fontSize = `${fontSize}px`;
+    console.log(`Font size applied: ${fontSize}px`);
+  } catch (error) {
+    console.error('Failed to apply font size:', error);
+  }
 }
 
 /**
@@ -241,6 +259,11 @@ watch(() => settings.theme_mode, () => {
 watch(() => settings.theme_color, () => {
   if (settings.loaded) {
     applyColorScheme();
+  }
+});
+watch(() => settings.font_size, () => {
+  if (settings.loaded) {
+    applyFontSize();
   }
 });
 

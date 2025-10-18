@@ -26,6 +26,7 @@ class SettingsManager:
         'theme_color': '#6750A4',  # Material Design default purple
 
         'topbar_height': '3',  # 顶栏高度(rem)
+        'font_size': '16',  # 全局字体大小(px)
 
         # 组件设置
         'show_clock': 'true',

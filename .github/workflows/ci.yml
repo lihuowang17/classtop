@@ -71,8 +71,5 @@ jobs:
       - name: Run Rust clippy
         run: cargo clippy --manifest-path=src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
 
-      - name: Build Tauri app (dev check)
-        run: npm run tauri build -- --profile bundle-dev
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ""
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+      - name: Check Rust build
+        run: cargo build --manifest-path=src-tauri/Cargo.toml --release --features pytauri/standalone

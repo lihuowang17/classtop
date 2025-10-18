@@ -88,6 +88,26 @@ classtop/
 └── vite.config.js               # Vite 配置
 ```
 
+## 📚 开发文档
+
+### 平台开发指南
+
+- **[Linux 开发环境搭建](./docs/LINUX_SETUP.md)** - Ubuntu/Debian/Fedora/Arch Linux 开发环境配置
+- **[macOS 开发环境搭建](./docs/MACOS_SETUP.md)** - macOS 开发环境配置（Intel/Apple Silicon）
+- **[Windows 开发环境搭建](#windows-开发环境)** - Windows 开发环境配置（见下文）
+
+### IDE/编辑器配置
+
+- **[VSCode 配置指南](./docs/VSCODE_SETUP.md)** - 全平台推荐，完整的扩展和配置说明
+- **[Xcode 配置指南](./docs/XCODE_SETUP.md)** - macOS 专用，用于高级调试和性能分析
+- **[Visual Studio 配置指南](./docs/VISUAL_STUDIO_SETUP.md)** - Windows 专用，用于高级调试和性能分析
+
+### 其他文档
+
+- **[项目架构说明](./CLAUDE.md)** - 详细的项目架构和开发指南
+- **[API 文档](./docs/API.md)** - HTTP API 接口说明
+- **[API 快速开始](./docs/API_QUICKSTART.md)** - API 使用示例
+
 ## 🚀 快速开始
 
 ### 前置要求
@@ -97,7 +117,9 @@ classtop/
 - **Rust** (通过 rustup 安装)
 - **npm** 或 **pnpm**
 
-### 安装依赖
+> 💡 **提示**: 完整的开发环境搭建指南请参考上方的 [平台开发指南](#平台开发指南)
+
+### Windows 开发环境
 
 Windows 开发环境常用步骤（已知项目使用 Node.js、Python 与 Rust）：
 

@@ -3,10 +3,12 @@ Command handlers for ClassTop application.
 """
 
 import sys
+import numpy as np
 from typing import Optional, List, Dict
 
 from pydantic import BaseModel
 from pytauri import Commands
+from pytauri.ipc import Channel, JavaScriptChannelId, WebviewWindow
 
 from . import logger as _logger
 from . import db as _db
@@ -14,6 +16,9 @@ from . import db as _db
 
 # Command registration
 commands: Commands = Commands()
+
+# 全局存储 audio channel 以避免重复创建
+_audio_channel = None
 
 
 # Request/Response models
@@ -500,3 +505,221 @@ async def get_camera_status(body: CameraStatusRequest) -> CameraStatusResponse:
 
     status = _db.camera_manager.get_status(body.camera_index)
     return CameraStatusResponse(status=status)
+
+
+# ========== Audio Monitoring Commands ==========
+
+class AudioLevelData(BaseModel):
+    """音频响度数据 - 用于 Channel 传输"""
+    timestamp: str  # ISO format datetime string
+    rms: float      # 均方根值 (0-1)
+    db: float       # 分贝值
+    peak: float     # 峰值 (0-1)
+    source: str     # 数据源: "microphone" or "system"
+
+
+class StartAudioMonitoringRequest(BaseModel):
+    """启动音频监控请求"""
+    monitor_type: str  # "microphone" or "system" or "both"
+    channel_id: JavaScriptChannelId[AudioLevelData]  # Channel ID from frontend
+
+
+class StopAudioMonitoringRequest(BaseModel):
+    """停止音频监控请求"""
+    monitor_type: str  # "microphone" or "system" or "all"
+
+
+class AudioMonitoringResponse(BaseModel):
+    """音频监控响应"""
+    success: bool
+    message: str
+
+
+class AudioDevicesResponse(BaseModel):
+    """音频设备列表响应"""
+    input_devices: List[Dict]
+    output_devices: List[Dict]
+
+
+@commands.command()
+async def start_audio_monitoring(
+    body: StartAudioMonitoringRequest,
+    webview_window: WebviewWindow
+) -> AudioMonitoringResponse:
+    """启动音频监控并通过 Channel 实时传输数据"""
+    global _audio_channel
+
+    if not _db.audio_manager:
+        return AudioMonitoringResponse(
+            success=False,
+            message="Audio manager not available"
+        )
+
+    try:
+        # 复用或创建 Channel 对象
+        if _audio_channel is None:
+            _audio_channel = body.channel_id.channel_on(webview_window.as_ref_webview())
+
+        channel = _audio_channel
+
+        if body.monitor_type == "microphone":
+            def mic_callback(level):
+                try:
+                    # 确保 db 值是有限数值，避免 JSON 序列化问题
+                    db_value = level.db if np.isfinite(level.db) else -100.0
+
+                    data = AudioLevelData(
+                        timestamp=level.timestamp.isoformat(),
+                        rms=level.rms,
+                        db=db_value,
+                        peak=level.peak,
+                        source="microphone"
+                    )
+                    channel.send_model(data)
+                except Exception as e:
+                    _logger.log_message("error", f"Failed to send mic audio data: {e}")
+
+            _db.audio_manager.start_microphone_monitoring(callback=mic_callback)
+            return AudioMonitoringResponse(
+                success=True,
+                message="Microphone monitoring started"
+            )
+        elif body.monitor_type == "system":
+            def sys_callback(level):
+                try:
+                    # 确保 db 值是有限数值，避免 JSON 序列化问题
+                    db_value = level.db if np.isfinite(level.db) else -100.0
+
+                    data = AudioLevelData(
+                        timestamp=level.timestamp.isoformat(),
+                        rms=level.rms,
+                        db=db_value,
+                        peak=level.peak,
+                        source="system"
+                    )
+                    channel.send_model(data)
+                except Exception as e:
+                    _logger.log_message("error", f"Failed to send sys audio data: {e}")
+
+            _db.audio_manager.start_system_monitoring(callback=sys_callback)
+            return AudioMonitoringResponse(
+                success=True,
+                message="System audio monitoring started"
+            )
+        elif body.monitor_type == "both":
+            # 为 both 模式创建两个不同的 callback
+            def mic_callback(level):
+                try:
+                    # 确保 db 值是有限数值，避免 JSON 序列化问题
+                    db_value = level.db if np.isfinite(level.db) else -100.0
+
+                    data = AudioLevelData(
+                        timestamp=level.timestamp.isoformat(),
+                        rms=level.rms,
+                        db=db_value,
+                        peak=level.peak,
+                        source="microphone"
+                    )
+                    channel.send_model(data)
+                except Exception as e:
+                    _logger.log_message("error", f"Failed to send mic audio data: {e}")
+
+            def sys_callback(level):
+                try:
+                    # 确保 db 值是有限数值，避免 JSON 序列化问题
+                    db_value = level.db if np.isfinite(level.db) else -100.0
+
+                    data = AudioLevelData(
+                        timestamp=level.timestamp.isoformat(),
+                        rms=level.rms,
+                        db=db_value,
+                        peak=level.peak,
+                        source="system"
+                    )
+                    channel.send_model(data)
+                except Exception as e:
+                    _logger.log_message("error", f"Failed to send sys audio data: {e}")
+
+            _db.audio_manager.start_all(
+                mic_callback=mic_callback,
+                sys_callback=sys_callback
+            )
+            return AudioMonitoringResponse(
+                success=True,
+                message="Both microphone and system monitoring started"
+            )
+        else:
+            return AudioMonitoringResponse(
+                success=False,
+                message=f"Invalid monitor_type: {body.monitor_type}"
+            )
+    except Exception as e:
+        _logger.log_message("error", f"Failed to start audio monitoring: {e}")
+        return AudioMonitoringResponse(
+            success=False,
+            message=str(e)
+        )
+
+
+@commands.command()
+async def stop_audio_monitoring(body: StopAudioMonitoringRequest) -> AudioMonitoringResponse:
+    """停止音频监控"""
+    global _audio_channel
+
+    if not _db.audio_manager:
+        return AudioMonitoringResponse(
+            success=False,
+            message="Audio manager not available"
+        )
+
+    try:
+        if body.monitor_type == "microphone":
+            _db.audio_manager.stop_microphone_monitoring()
+            return AudioMonitoringResponse(
+                success=True,
+                message="Microphone monitoring stopped"
+            )
+        elif body.monitor_type == "system":
+            _db.audio_manager.stop_system_monitoring()
+            return AudioMonitoringResponse(
+                success=True,
+                message="System audio monitoring stopped"
+            )
+        elif body.monitor_type == "all":
+            _db.audio_manager.stop_all()
+            # 当停止所有监控时，清理 channel
+            _audio_channel = None
+            return AudioMonitoringResponse(
+                success=True,
+                message="All audio monitoring stopped"
+            )
+        else:
+            return AudioMonitoringResponse(
+                success=False,
+                message=f"Invalid monitor_type: {body.monitor_type}"
+            )
+    except Exception as e:
+        _logger.log_message("error", f"Failed to stop audio monitoring: {e}")
+        return AudioMonitoringResponse(
+            success=False,
+            message=str(e)
+        )
+
+
+@commands.command()
+async def get_audio_devices() -> AudioDevicesResponse:
+    """获取所有可用的音频设备"""
+    try:
+        from .audio_manager import AudioManager
+        devices = AudioManager.list_devices()
+        return AudioDevicesResponse(
+            input_devices=devices.get("input", []),
+            output_devices=devices.get("output", [])
+        )
+    except Exception as e:
+        _logger.log_message("error", f"Failed to list audio devices: {e}")
+        return AudioDevicesResponse(
+            input_devices=[],
+            output_devices=[]
+        )
+

@@ -89,6 +89,16 @@ def main() -> int:
                 else:
                     _logger.log_message("info", "Camera manager not initialized: platform is not Windows")
 
+            # Initialize audio manager
+            try:
+                from .audio_manager import AudioManager
+                audio_manager = AudioManager()
+                _db.set_audio_manager(audio_manager)
+                _logger.log_message("info", "Audio manager initialized")
+            except Exception as e:
+                _logger.log_message(
+                    "warning", f"Failed to initialize audio manager: {e}")
+
             # Start WebSocket client after camera manager is initialized
             if ws_client:
                 try:

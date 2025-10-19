@@ -25,7 +25,6 @@ def main() -> int:
     from .events import event_handler
     from .schedule_manager import ScheduleManager
     from .settings_manager import SettingsManager
-    from .camera_manager import CameraManager
     from .api_server import APIServer
     from . import db as _db
 
@@ -75,15 +74,20 @@ def main() -> int:
                 _logger.log_message("error", f"Failed to create WebSocket client: {e}")
 
             # Initialize camera manager if enabled (with WebSocket client reference)
+            import platform
             camera_enabled = settings_manager.get_setting('camera_enabled')
             if camera_enabled == 'true':
-                try:
-                    camera_manager = CameraManager(settings_manager, event_handler, ws_client)
-                    _db.set_camera_manager(camera_manager)
-                    camera_manager.initialize()
-                except Exception as e:
-                    _logger.log_message(
-                        "warning", f"Failed to initialize camera manager: {e}")
+                if platform.system() == "Windows":
+                    try:
+                        from .camera_manager import CameraManager
+                        camera_manager = CameraManager(settings_manager, event_handler, ws_client)
+                        _db.set_camera_manager(camera_manager)
+                        camera_manager.initialize()
+                    except Exception as e:
+                        _logger.log_message(
+                            "warning", f"Failed to initialize camera manager: {e}")
+                else:
+                    _logger.log_message("info", "Camera manager not initialized: platform is not Windows")
 
             # Start WebSocket client after camera manager is initialized
             if ws_client:

@@ -1,0 +1,49 @@
+# CODEOWNERS
+# This file defines code ownership for the ClassTop project
+# Generated based on Git commit history analysis
+#
+# Lines starting with '#' are comments.
+# Each line is a file pattern followed by one or more owners (GitHub usernames or email addresses)
+# The last matching pattern has the most precedence.
+
+# Default owner for everything in the repo
+# If no pattern matches, these users will be requested for review
+* @Amiya167 @HwlloChen
+
+# Documentation
+/docs/ @Amiya167
+/CLAUDE.md @Amiya167
+/README.md @Amiya167 @HwlloChen
+/CAMERA_INTEGRATION.md @Amiya167
+/*.md @Amiya167
+
+# Frontend code (Vue/JavaScript/CSS)
+/src/ @HwlloChen
+/src/**/*.vue @HwlloChen
+/src/**/*.js @HwlloChen
+/src/**/*.css @HwlloChen
+/src/**/*.less @HwlloChen
+
+# Backend code (Tauri/Rust/Python)
+/src-tauri/ @HwlloChen
+/src-tauri/**/*.rs @HwlloChen
+/src-tauri/**/*.py @HwlloChen
+/src-tauri/**/*.toml @HwlloChen
+/src-tauri/**/*.json @HwlloChen
+
+# LMS (Light Management Service)
+/lms/ @Amiya167
+/lms/**/*.py @Amiya167
+
+# Build configuration
+/Build.ps1 @HwlloChen
+/vite.config.js @HwlloChen
+/package.json @HwlloChen
+
+# Dependencies and requirements
+/requirements-api.txt @Amiya167
+/package-lock.json @HwlloChen
+
+# Root configuration files
+/.gitignore @HwlloChen @Amiya167
+/index.html @HwlloChen

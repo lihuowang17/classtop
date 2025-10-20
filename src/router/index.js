@@ -4,6 +4,7 @@ import Settings from '../pages/Settings.vue'
 import TopBar from '../TopBar/TopBar.vue'
 import Main from '../Main.vue'
 import SchedulePage from '../pages/SchedulePage.vue'
+import AudioMonitor from '../pages/AudioMonitor.vue'
 
 const routes = [
   {
@@ -12,7 +13,8 @@ const routes = [
     children: [
       { path: '', name: 'Home', component: Home },
       { path: '/schedule', name: 'SchedulePage', component: SchedulePage },
-      { path: '/settings', name: 'Settings', component: Settings }
+      { path: '/settings', name: 'Settings', component: Settings },
+      { path: '/audio', name: 'AudioMonitor', component: AudioMonitor }
     ]
   },
   { path: '/topbar', name: 'TopBar', component: TopBar }

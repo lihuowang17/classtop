@@ -485,3 +485,5 @@ Contributors will be automatically added here
 **再次感谢您的贡献！让我们一起让 ClassTop 变得更好！** ❤️
 
 *Made with ❤️ by Classtop Team*
+
+（P.S：也请不要同时提起华莱士，蜜雪冰城，依维柯，防止…啊，博士，我要吐了）

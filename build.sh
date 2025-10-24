@@ -46,8 +46,17 @@ echo "🔧 Set PYO3_PYTHON=$PYO3_PYTHON"
 
 # Set library search path for linking
 PYTHON_LIB_DIR="${PROJECT_ROOT}/src-tauri/pyembed/python/lib"
-export RUSTFLAGS="-L ${PYTHON_LIB_DIR}"
-echo "🔧 Set RUSTFLAGS=$RUSTFLAGS"
+
+# Add rpath for runtime library loading
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS: Add rpath to find libpython in the app bundle
+    export RUSTFLAGS="-L ${PYTHON_LIB_DIR} -C link-args=-Wl,-rpath,@executable_path/../Resources/lib"
+    echo "🔧 Set RUSTFLAGS=$RUSTFLAGS"
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux: Add rpath for Linux app bundle
+    export RUSTFLAGS="-L ${PYTHON_LIB_DIR} -C link-args=-Wl,-rpath,\$ORIGIN/../lib"
+    echo "🔧 Set RUSTFLAGS=$RUSTFLAGS"
+fi
 echo ""
 
 # Install Python package

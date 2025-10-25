@@ -435,3 +435,57 @@ export function isCurrentTimeSlot(startTime, endTime) {
 
   return currentMinutes >= startMinutes && currentMinutes < endMinutes;
 }
+
+/**
+ * 检查课程时间冲突
+ */
+export async function checkScheduleConflict(dayOfWeek, startTime, endTime, weeks = null, excludeEntryId = null) {
+  try {
+    const result = await pyInvoke('check_schedule_conflict', {
+      day_of_week: dayOfWeek,
+      start_time: startTime,
+      end_time: endTime,
+      weeks,
+      exclude_entry_id: excludeEntryId
+    });
+    return result;
+  } catch (error) {
+    console.error('Failed to check schedule conflict:', error);
+    return { has_conflict: false, conflicts: [] };
+  }
+}
+
+/**
+ * 导出课程表数据
+ */
+export async function exportScheduleData(format = 'json', includeCourses = true, includeSchedule = true, includeSettings = false) {
+  try {
+    const result = await pyInvoke('export_schedule_data', {
+      format,
+      include_courses: includeCourses,
+      include_schedule: includeSchedule,
+      include_settings: includeSettings
+    });
+    return result;
+  } catch (error) {
+    console.error('Failed to export schedule data:', error);
+    return { success: false, message: '导出失败', data: null };
+  }
+}
+
+/**
+ * 导入课程表数据
+ */
+export async function importScheduleData(format, data, replaceExisting = false) {
+  try {
+    const result = await pyInvoke('import_schedule_data', {
+      format,
+      data,
+      replace_existing: replaceExisting
+    });
+    return result;
+  } catch (error) {
+    console.error('Failed to import schedule data:', error);
+    return { success: false, message: '导入失败', courses_imported: 0, schedule_imported: 0 };
+  }
+}

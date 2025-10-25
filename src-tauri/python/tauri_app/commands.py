@@ -207,6 +207,53 @@ async def add_schedule_entry(body: ScheduleEntryRequest) -> Dict:
     return {"id": entry_id, "success": entry_id > 0}
 
 
+class ConflictCheckRequest(BaseModel):
+    day_of_week: int
+    start_time: str
+    end_time: str
+    weeks: Optional[List[int]] = None
+    exclude_entry_id: Optional[int] = None  # 编辑时排除当前课程
+
+
+class ConflictEntry(BaseModel):
+    id: int
+    course_name: str
+    teacher: Optional[str]
+    location: Optional[str]
+    start_time: str
+    end_time: str
+    day_of_week: int
+    weeks: List[int]
+    conflict_weeks: List[int]  # 实际冲突的周数
+
+
+class ConflictCheckResponse(BaseModel):
+    has_conflict: bool
+    conflicts: List[ConflictEntry]
+
+
+@commands.command()
+async def check_schedule_conflict(body: ConflictCheckRequest) -> ConflictCheckResponse:
+    """Check if a schedule entry conflicts with existing entries."""
+    if not _db.schedule_manager:
+        return ConflictCheckResponse(has_conflict=False, conflicts=[])
+
+    conflicts = _db.schedule_manager.check_conflicts(
+        body.day_of_week,
+        body.start_time,
+        body.end_time,
+        body.weeks,
+        body.exclude_entry_id
+    )
+
+    conflict_entries = [ConflictEntry(**conflict) for conflict in conflicts]
+
+    return ConflictCheckResponse(
+        has_conflict=len(conflict_entries) > 0,
+        conflicts=conflict_entries
+    )
+
+
 @commands.command()
 async def get_schedule(body: WeekRequest) -> List[ScheduleEntryResponse]:
     schedule = _db.get_schedule(body.week)
@@ -722,4 +769,251 @@ async def get_audio_devices() -> AudioDevicesResponse:
             input_devices=[],
             output_devices=[]
         )
+
+
+# ========== Data Import/Export Commands ==========
+
+class ExportDataRequest(BaseModel):
+    format: str  # "json" or "csv"
+    include_courses: bool = True
+    include_schedule: bool = True
+    include_settings: bool = False
+
+
+class ExportDataResponse(BaseModel):
+    success: bool
+    data: Optional[str] = None
+    message: str
+
+
+class ImportDataRequest(BaseModel):
+    format: str  # "json" or "csv"
+    data: str
+    replace_existing: bool = False  # 是否替换现有数据
+
+
+class ImportDataResponse(BaseModel):
+    success: bool
+    message: str
+    courses_imported: int = 0
+    schedule_imported: int = 0
+
+
+@commands.command()
+async def export_schedule_data(body: ExportDataRequest) -> ExportDataResponse:
+    """Export schedule data to JSON or CSV format."""
+    try:
+        import json
+        import csv
+        import io
+
+        data_dict = {}
+
+        # Export courses
+        if body.include_courses:
+            courses = _db.get_courses()
+            data_dict['courses'] = courses
+
+        # Export schedule
+        if body.include_schedule:
+            schedule = _db.get_schedule(week=None)
+            data_dict['schedule'] = schedule
+
+        # Export settings (optional)
+        if body.include_settings:
+            settings = _db.list_configs()
+            # Exclude sensitive settings
+            safe_settings = {k: v for k, v in settings.items()
+                           if k not in ['client_uuid', 'server_url', 'api_server_enabled']}
+            data_dict['settings'] = safe_settings
+
+        if body.format == 'json':
+            # Export as JSON
+            json_data = json.dumps(data_dict, ensure_ascii=False, indent=2)
+            return ExportDataResponse(
+                success=True,
+                data=json_data,
+                message="数据已导出为 JSON 格式"
+            )
+
+        elif body.format == 'csv':
+            # Export as CSV (schedule entries only)
+            output = io.StringIO()
+            writer = csv.writer(output)
+
+            # Write CSV header
+            writer.writerow([
+                'course_id', 'course_name', 'teacher', 'location', 'color',
+                'day_of_week', 'start_time', 'end_time', 'weeks', 'note'
+            ])
+
+            # Write schedule entries
+            for entry in data_dict.get('schedule', []):
+                writer.writerow([
+                    entry.get('course_id', ''),
+                    entry.get('course_name', ''),
+                    entry.get('teacher', ''),
+                    entry.get('location', ''),
+                    entry.get('color', ''),
+                    entry.get('day_of_week', ''),
+                    entry.get('start_time', ''),
+                    entry.get('end_time', ''),
+                    json.dumps(entry.get('weeks', [])),
+                    entry.get('note', '')
+                ])
+
+            csv_data = output.getvalue()
+            return ExportDataResponse(
+                success=True,
+                data=csv_data,
+                message="数据已导出为 CSV 格式"
+            )
+
+        else:
+            return ExportDataResponse(
+                success=False,
+                message=f"不支持的导出格式: {body.format}"
+            )
+
+    except Exception as e:
+        _logger.log_message("error", f"Failed to export data: {e}")
+        return ExportDataResponse(
+            success=False,
+            message=f"导出失败: {str(e)}"
+        )
+
+
+@commands.command()
+async def import_schedule_data(body: ImportDataRequest) -> ImportDataResponse:
+    """Import schedule data from JSON or CSV format."""
+    try:
+        import json
+        import csv
+        import io
+
+        courses_imported = 0
+        schedule_imported = 0
+
+        if body.format == 'json':
+            # Parse JSON data
+            data_dict = json.loads(body.data)
+
+            # Clear existing data if requested
+            if body.replace_existing:
+                # Delete all schedule entries and courses
+                all_courses = _db.get_courses()
+                for course in all_courses:
+                    _db.delete_course(course['id'])
+
+            # Import courses
+            if 'courses' in data_dict:
+                course_id_map = {}  # Map old IDs to new IDs
+                for course_data in data_dict['courses']:
+                    # Remove ID to create new course
+                    course_name = course_data.get('name')
+                    teacher = course_data.get('teacher')
+                    location = course_data.get('location')
+                    color = course_data.get('color')
+
+                    new_id = _db.add_course(course_name, teacher, location, color)
+                    if new_id > 0:
+                        old_id = course_data.get('id')
+                        course_id_map[old_id] = new_id
+                        courses_imported += 1
+
+            # Import schedule entries
+            if 'schedule' in data_dict:
+                for entry_data in data_dict['schedule']:
+                    old_course_id = entry_data.get('course_id')
+                    new_course_id = course_id_map.get(old_course_id)
+
+                    if new_course_id:
+                        entry_id = _db.add_schedule_entry(
+                            course_id=new_course_id,
+                            day_of_week=entry_data.get('day_of_week'),
+                            start_time=entry_data.get('start_time'),
+                            end_time=entry_data.get('end_time'),
+                            weeks=entry_data.get('weeks'),
+                            note=entry_data.get('note')
+                        )
+                        if entry_id > 0:
+                            schedule_imported += 1
+
+            return ImportDataResponse(
+                success=True,
+                message=f"成功导入 {courses_imported} 门课程和 {schedule_imported} 条课程表",
+                courses_imported=courses_imported,
+                schedule_imported=schedule_imported
+            )
+
+        elif body.format == 'csv':
+            # Parse CSV data
+            reader = csv.DictReader(io.StringIO(body.data))
+
+            # Clear existing data if requested
+            if body.replace_existing:
+                all_courses = _db.get_courses()
+                for course in all_courses:
+                    _db.delete_course(course['id'])
+
+            # Map to track created courses
+            course_map = {}  # name -> course_id
+
+            for row in reader:
+                course_name = row.get('course_name', '').strip()
+                if not course_name:
+                    continue
+
+                # Create or get course
+                if course_name not in course_map:
+                    course_id = _db.add_course(
+                        name=course_name,
+                        teacher=row.get('teacher'),
+                        location=row.get('location'),
+                        color=row.get('color')
+                    )
+                    if course_id > 0:
+                        course_map[course_name] = course_id
+                        courses_imported += 1
+                else:
+                    course_id = course_map[course_name]
+
+                # Add schedule entry
+                try:
+                    weeks_str = row.get('weeks', '[]')
+                    weeks = json.loads(weeks_str) if weeks_str else None
+                except:
+                    weeks = None
+
+                entry_id = _db.add_schedule_entry(
+                    course_id=course_id,
+                    day_of_week=int(row.get('day_of_week', 1)),
+                    start_time=row.get('start_time'),
+                    end_time=row.get('end_time'),
+                    weeks=weeks,
+                    note=row.get('note')
+                )
+                if entry_id > 0:
+                    schedule_imported += 1
+
+            return ImportDataResponse(
+                success=True,
+                message=f"成功导入 {courses_imported} 门课程和 {schedule_imported} 条课程表",
+                courses_imported=courses_imported,
+                schedule_imported=schedule_imported
+            )
+
+        else:
+            return ImportDataResponse(
+                success=False,
+                message=f"不支持的导入格式: {body.format}"
+            )
+
+    except Exception as e:
+        _logger.log_message("error", f"Failed to import data: {e}")
+        return ImportDataResponse(
+            success=False,
+            message=f"导入失败: {str(e)}"
+        )
+
 

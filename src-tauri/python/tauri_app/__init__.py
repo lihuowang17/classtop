@@ -56,6 +56,19 @@ def main() -> int:
             schedule_manager = ScheduleManager(_db.DB_PATH, event_handler)
             _db.set_schedule_manager(schedule_manager)
 
+            # Initialize reminder manager
+            try:
+                from .reminder_manager import ReminderManager
+                reminder_manager = ReminderManager(schedule_manager, settings_manager, app_handle)
+                reminder_enabled = settings_manager.get_setting('reminder_enabled')
+                if reminder_enabled == 'true':
+                    reminder_manager.start()
+                    _logger.log_message("info", "Reminder service started")
+                else:
+                    _logger.log_message("info", "Reminder service disabled in settings")
+            except Exception as e:
+                _logger.log_message("warning", f"Failed to initialize reminder manager: {e}")
+
             # Initialize WebSocket client for admin server (before camera manager)
             ws_client = None
             try:

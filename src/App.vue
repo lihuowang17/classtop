@@ -1,5 +1,15 @@
 <script setup>
-// 可以在这里添加全局的应用逻辑
+import { onMounted } from 'vue';
+import { initReminderNotifications } from './utils/notifications';
+
+// Initialize reminder notifications on app start
+onMounted(async () => {
+  try {
+    await initReminderNotifications();
+  } catch (error) {
+    console.error('Failed to initialize reminder notifications:', error);
+  }
+});
 </script>
 
 <template>

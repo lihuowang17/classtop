@@ -52,6 +52,11 @@ class SettingsManager:
         # 录制设置
         'recording_output_dir': f'{str(APP_DIR)}/recordings',  # 录制文件输出目录
         'recording_filename_pattern': 'recording_%Y%m%d_%H%M%S',  # 文件名模式
+
+        # 课程提醒设置
+        'reminder_enabled': 'true',  # 是否启用课程提醒
+        'reminder_minutes': '10',  # 提前多少分钟提醒（可选: 5, 10, 15, 30）
+        'reminder_sound': 'true',  # 是否播放提示音
     }
 
     def __init__(self, db_path: Path, event_handler):

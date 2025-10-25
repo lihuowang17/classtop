@@ -395,6 +395,89 @@ class ScheduleManager:
             self.logger.log_message("error", f"Error calculating week number: {e}")
             return 1
 
+    def check_conflicts(self, day_of_week: int, start_time: str, end_time: str,
+                       weeks: Optional[List[int]] = None,
+                       exclude_entry_id: Optional[int] = None) -> List[Dict]:
+        """
+        Check for schedule conflicts and return detailed conflict information.
+
+        Args:
+            day_of_week: Day of week (1-7)
+            start_time: Start time (HH:MM)
+            end_time: End time (HH:MM)
+            weeks: List of weeks this entry applies to
+            exclude_entry_id: Entry ID to exclude (for editing existing entries)
+
+        Returns:
+            List of conflicting schedule entries with conflict details
+        """
+        self.logger.log_message("debug", f"Checking conflicts for {day_of_week} {start_time}-{end_time}")
+
+        with self.get_connection() as conn:
+            try:
+                cur = conn.cursor()
+                query = """
+                    SELECT s.id, c.name, c.teacher, c.location, s.start_time, s.end_time,
+                           s.day_of_week, s.weeks
+                    FROM schedule s
+                    JOIN courses c ON s.course_id = c.id
+                    WHERE s.day_of_week = ?
+                """
+                params = [day_of_week]
+
+                # Exclude specific entry if editing
+                if exclude_entry_id:
+                    query += " AND s.id != ?"
+                    params.append(exclude_entry_id)
+
+                cur.execute(query, params)
+
+                conflicts = []
+                for row in cur.fetchall():
+                    existing_id = row[0]
+                    existing_name = row[1]
+                    existing_teacher = row[2]
+                    existing_location = row[3]
+                    existing_start = row[4]
+                    existing_end = row[5]
+                    existing_day = row[6]
+                    existing_weeks = json.loads(row[7]) if row[7] else []
+
+                    # Check time overlap
+                    if not (end_time <= existing_start or start_time >= existing_end):
+                        # Check week overlap
+                        conflict_weeks = []
+
+                        if not weeks or not existing_weeks:
+                            # If either has no week restriction, it conflicts for all weeks
+                            conflict_weeks = weeks if weeks else existing_weeks if existing_weeks else [1]
+                        else:
+                            # Calculate actual conflicting weeks
+                            conflict_weeks = list(set(weeks) & set(existing_weeks))
+
+                        if conflict_weeks or (not weeks and not existing_weeks):
+                            conflicts.append({
+                                "id": existing_id,
+                                "course_name": existing_name,
+                                "teacher": existing_teacher,
+                                "location": existing_location,
+                                "start_time": existing_start,
+                                "end_time": existing_end,
+                                "day_of_week": existing_day,
+                                "weeks": existing_weeks,
+                                "conflict_weeks": conflict_weeks
+                            })
+
+                            self.logger.log_message("warning",
+                                f"Conflict detected with '{existing_name}' ({existing_start}-{existing_end}) "
+                                f"in weeks {conflict_weeks}")
+
+                return conflicts
+
+            except Exception as e:
+                self.logger.log_message("error", f"Error checking conflicts: {e}")
+                return []
+
     def get_statistics(self) -> Dict:
         """Get schedule statistics."""
         self.logger.log_message("debug", "Calculating schedule statistics")

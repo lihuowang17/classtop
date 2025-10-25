@@ -120,6 +120,58 @@
       </mdui-list>
     </mdui-card>
 
+    <!-- 课程提醒设置 -->
+    <mdui-card class="settings-group">
+      <span class="group-title">课程提醒</span>
+      <mdui-divider></mdui-divider>
+      <mdui-list>
+        <mdui-list-item icon="notifications" rounded>
+          启用课程提醒
+          <mdui-switch :checked="settings.reminder_enabled" @change="handleSwitchChange('reminder_enabled', $event)"
+            slot="end-icon">
+          </mdui-switch>
+        </mdui-list-item>
+        <mdui-list-item icon="schedule" rounded nonclickable :disabled="settings.reminder_enabled !== 'true'">
+          提前提醒时间
+          <mdui-segmented-button-group selects="single" :value="settings.reminder_minutes || '10'"
+            @change="handleReminderTimeChange" slot="end-icon">
+            <mdui-segmented-button value="5">5分钟</mdui-segmented-button>
+            <mdui-segmented-button value="10">10分钟</mdui-segmented-button>
+            <mdui-segmented-button value="15">15分钟</mdui-segmented-button>
+            <mdui-segmented-button value="30">30分钟</mdui-segmented-button>
+          </mdui-segmented-button-group>
+        </mdui-list-item>
+        <mdui-list-item icon="volume_up" rounded :disabled="settings.reminder_enabled !== 'true'">
+          提示音
+          <mdui-switch :checked="settings.reminder_sound" @change="handleSwitchChange('reminder_sound', $event)"
+            slot="end-icon">
+          </mdui-switch>
+        </mdui-list-item>
+      </mdui-list>
+    </mdui-card>
+
+    <!-- 数据导入/导出 -->
+    <mdui-card class="settings-group">
+      <span class="group-title">数据管理</span>
+      <mdui-divider></mdui-divider>
+      <mdui-list>
+        <mdui-list-item icon="file_download" rounded nonclickable>
+          导出课程表
+          <div slot="end-icon" style="display: flex; gap: 8px;">
+            <mdui-button variant="outlined" @click="handleExport('json')">导出为 JSON</mdui-button>
+            <mdui-button variant="outlined" @click="handleExport('csv')">导出为 CSV</mdui-button>
+          </div>
+        </mdui-list-item>
+        <mdui-list-item icon="file_upload" rounded nonclickable>
+          导入课程表
+          <div slot="end-icon" style="display: flex; gap: 8px;">
+            <mdui-button variant="outlined" @click="handleImport('json')">从 JSON 导入</mdui-button>
+            <mdui-button variant="outlined" @click="handleImport('csv')">从 CSV 导入</mdui-button>
+          </div>
+        </mdui-list-item>
+      </mdui-list>
+    </mdui-card>
+
     <!-- 操作按钮 -->
     <div class="actions">
       <mdui-button variant="outlined" @click="handleResetSettings">重置所有设置</mdui-button>
@@ -131,7 +183,10 @@
 <script setup>
 import { snackbar } from 'mdui';
 import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
+import { save, open } from '@tauri-apps/plugin-dialog';
+import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
 import { settings, saveSetting, saveSettings, regenerateUUID, resetSettings, setThemeMode, applyColorScheme } from '../utils/globalVars';
+import { exportScheduleData, importScheduleData } from '../utils/schedule';
 import { onMounted } from 'vue';
 
 // 控制模式切换处理（触摸/鼠标）
@@ -195,6 +250,14 @@ async function handleSwitchChange(key, event) {
   snackbar({ message: '设置已更新', placement: 'top' });
 }
 
+// 提醒时间切换
+async function handleReminderTimeChange(event) {
+  const value = event.target.value || settings.reminder_minutes;
+  settings.reminder_minutes = value;
+  await saveSetting('reminder_minutes', value);
+  snackbar({ message: `提醒时间已设置为提前${value}分钟`, placement: 'top' });
+}
+
 
 // 保存所有设置
 async function handleSaveAll() {
@@ -209,6 +272,9 @@ async function handleSaveAll() {
     camera_enabled: settings.camera_enabled,
     control_mode: settings.control_mode,
     semester_start_date: settings.semester_start_date,
+    reminder_enabled: settings.reminder_enabled,
+    reminder_minutes: settings.reminder_minutes,
+    reminder_sound: settings.reminder_sound,
   });
 
   if (success) {
@@ -226,6 +292,85 @@ async function handleResetSettings() {
     snackbar({ message: '设置已重置为默认值', placement: 'top' });
   } else {
     snackbar({ message: '重置失败', placement: 'top' });
+  }
+}
+
+// 导出课程表
+async function handleExport(format) {
+  try {
+    const result = await exportScheduleData(format, true, true, false);
+
+    if (!result.success || !result.data) {
+      snackbar({ message: result.message || '导出失败', placement: 'top' });
+      return;
+    }
+
+    // 选择保存文件路径
+    const extension = format === 'json' ? '.json' : '.csv';
+    const defaultName = `课程表_${new Date().toISOString().split('T')[0]}${extension}`;
+
+    const filePath = await save({
+      defaultPath: defaultName,
+      filters: [{
+        name: format.toUpperCase(),
+        extensions: [format]
+      }]
+    });
+
+    if (!filePath) {
+      // 用户取消了保存
+      return;
+    }
+
+    // 写入文件
+    await writeTextFile(filePath, result.data);
+    snackbar({ message: `课程表已导出到: ${filePath}`, placement: 'top' });
+
+  } catch (error) {
+    console.error('Export error:', error);
+    snackbar({ message: `导出失败: ${error.message}`, placement: 'top' });
+  }
+}
+
+// 导入课程表
+async function handleImport(format) {
+  try {
+    // 选择文件
+    const filePath = await open({
+      multiple: false,
+      filters: [{
+        name: format.toUpperCase(),
+        extensions: [format]
+      }]
+    });
+
+    if (!filePath) {
+      // 用户取消了选择
+      return;
+    }
+
+    // 读取文件内容
+    const fileContent = await readTextFile(filePath);
+
+    // 导入数据
+    const result = await importScheduleData(format, fileContent, false);
+
+    if (result.success) {
+      snackbar({
+        message: `${result.message}\n导入了 ${result.courses_imported} 门课程和 ${result.schedule_imported} 条课程表`,
+        placement: 'top'
+      });
+      // 可选：刷新页面或重新加载数据
+      setTimeout(() => {
+        location.reload();
+      }, 2000);
+    } else {
+      snackbar({ message: result.message || '导入失败', placement: 'top' });
+    }
+
+  } catch (error) {
+    console.error('Import error:', error);
+    snackbar({ message: `导入失败: ${error.message}`, placement: 'top' });
   }
 }
 

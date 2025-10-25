@@ -197,6 +197,23 @@ class EventHandler:
                                f"Recording stopped on camera {camera_index}")
         logger.log_message("info", f"Recording stopped on camera {camera_index}")
 
+    def emit_custom_event(self, event_name: str, payload: Dict[str, Any]) -> None:
+        """Emit a custom event with arbitrary payload."""
+        if not self._app_handle:
+            logger.log_message("warning", "Event handler not initialized, cannot emit event")
+            return
+
+        try:
+            Emitter.emit_str(self._app_handle, event_name, str(payload))
+            logger.log_message("debug", f"Custom event emitted: {event_name}")
+        except Exception as e:
+            logger.log_message("error", f"Failed to emit custom event: {e}")
+
+    @classmethod
+    def get_instance(cls) -> Optional['EventHandler']:
+        """Get the singleton instance of EventHandler."""
+        return cls._instance
+
     @property
     def is_initialized(self) -> bool:
         """Check if the event handler is initialized."""

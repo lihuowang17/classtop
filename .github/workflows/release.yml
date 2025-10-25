@@ -31,7 +31,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -63,7 +62,7 @@ jobs:
             librsvg2-dev
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -77,4 +76,4 @@ jobs:
           releaseBody: 'See the assets to download and install this version.'
           releaseDraft: true
           prerelease: false
-          args: --config="src-tauri/tauri.bundle.json" -- --profile bundle-release ${{ matrix.args }}
+          args: --config=src-tauri/tauri.bundle.json -- --profile bundle-release ${{ matrix.args }}

@@ -16,11 +16,14 @@ jobs:
       matrix:
         include:
           - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+            args: ''
+            bundles: '--bundles app'
           - platform: 'ubuntu-22.04'
             args: ''
+            bundles: ''
           - platform: 'windows-latest'
             args: ''
+            bundles: ''
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -76,4 +79,4 @@ jobs:
           releaseBody: 'See the assets to download and install this version.'
           releaseDraft: true
           prerelease: false
-          args: --config=src-tauri/tauri.bundle.json -- --profile bundle-release ${{ matrix.args }}
+          args: --config=src-tauri/tauri.bundle.json ${{ matrix.bundles }} -- --profile bundle-release ${{ matrix.args }}

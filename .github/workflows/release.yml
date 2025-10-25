@@ -70,26 +70,26 @@ jobs:
       - name: Download Python standalone (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
-          curl -LO https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.10.16%2B20241016-x86_64-pc-windows-msvc-install_only_stripped.tar.gz
+          curl -LO https://github.com/astral-sh/python-build-standalone/releases/download/20251014/cpython-3.10.19%2B20251014-x86_64-pc-windows-msvc-install_only_stripped.tar.gz
           mkdir -p src-tauri/pyembed
-          tar -xzf cpython-3.10.16+20241016-x86_64-pc-windows-msvc-install_only_stripped.tar.gz -C src-tauri/pyembed
+          tar -xzf cpython-3.10.19+20251014-x86_64-pc-windows-msvc-install_only_stripped.tar.gz -C src-tauri/pyembed
           mv src-tauri/pyembed/python src-tauri/pyembed/python-temp || true
           mv src-tauri/pyembed/python-temp src-tauri/pyembed/python || true
 
       - name: Download Python standalone (Ubuntu)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
-          curl -LO https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.10.16%2B20241016-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz
+          curl -LO https://github.com/astral-sh/python-build-standalone/releases/download/20251014/cpython-3.10.19%2B20251014-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz
           mkdir -p src-tauri/pyembed
-          tar -xzf cpython-3.10.16+20241016-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz -C src-tauri/pyembed
+          tar -xzf cpython-3.10.19+20251014-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz -C src-tauri/pyembed
           mv src-tauri/pyembed/python src-tauri/pyembed/python-backup || true
 
       - name: Download Python standalone (macOS)
         if: matrix.platform == 'macos-latest'
         run: |
-          curl -LO https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.10.16%2B20241016-aarch64-apple-darwin-install_only_stripped.tar.gz
+          curl -LO https://github.com/astral-sh/python-build-standalone/releases/download/20251014/cpython-3.10.19%2B20251014-aarch64-apple-darwin-install_only_stripped.tar.gz
           mkdir -p src-tauri/pyembed
-          tar -xzf cpython-3.10.16+20241016-aarch64-apple-darwin-install_only_stripped.tar.gz -C src-tauri/pyembed
+          tar -xzf cpython-3.10.19+20251014-aarch64-apple-darwin-install_only_stripped.tar.gz -C src-tauri/pyembed
           mv src-tauri/pyembed/python src-tauri/pyembed/python-backup || true
 
       - name: Install Python dependencies

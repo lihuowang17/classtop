@@ -1,5 +1,8 @@
 name: Claude Code
 
+env:
+  ANTHROPIC_BASE_URL: https://anyrouter.top
+
 on:
   issue_comment:
     types: [created]

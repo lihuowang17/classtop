@@ -99,7 +99,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          PYO3_PYTHON: ${{ matrix.platform == 'windows-latest' && './src-tauri/pyembed/python/python.exe' || './src-tauri/pyembed/python/bin/python3' }}
+          PYO3_PYTHON: ${{ github.workspace }}/src-tauri/pyembed/python/${{ matrix.platform == 'windows-latest' && 'python.exe' || 'bin/python3' }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'ClassTop v__VERSION__'
